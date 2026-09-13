@@ -86,6 +86,39 @@ Before deciding whether full NVIDIA acceleration under XP is achievable, identif
 - whether the machine contains a hardware display mux,
 - whether BIOS offers `Integrated`, `Discrete`, `Switchable`, `Optimus`, or similar graphics modes.
 
+### Confirmed target notebook: Dell Inspiron 17R N7110
+
+The exact research machine has now been identified as **Dell Inspiron 17R N7110** with Intel graphics plus optional NVIDIA GeForce GT 525M.
+
+Upstream Dell evidence confirms that this model uses NVIDIA Optimus when fitted with the GT 525M. Dell support material for the N7110 includes Windows 7 NVIDIA packages with Optimus support, while Dell community reports describe the Intel GPU as the primary display path and the NVIDIA GPU as the render-offload device.
+
+Important N7110-specific findings:
+
+- Dell shipped N7110 variants with Intel-only graphics and variants with Intel + GeForce GT 525M; the NVIDIA GPU is soldered to the corresponding motherboard and is not an add-in module.
+- Dell BIOS history explicitly contains Optimus-related fixes; BIOS A03 fixed a case where the NVIDIA Optimus dGPU disappeared after warm boot.
+- Dell currently offers BIOS A13 for the N7110; firmware version should be recorded before experiments and firmware changes must not be performed casually.
+- A documented N7110 Windows XP SP3 installation exists where Intel HD graphics worked and the NVIDIA 307.83 XP package was modified to accept the notebook OEM SUBSYS ID. In that reported machine the NVIDIA device used `PCI\VEN_10DE&DEV_0DF5&SUBSYS_04C41028`. This ID is evidence for one N7110 board configuration only; the actual FX test machine must be read from Device Manager/PCI enumeration rather than assumed.
+- That INF modification was sufficient to make the GT 525M enumerate in Device Manager, but it did **not** prove working Optimus rendering, Direct3D acceleration, internal-panel output, or GPU switching under XP.
+- Dell community reports for the N7110 state that the Intel GPU remains the primary display device and that rendered frames from the NVIDIA GPU normally pass through the Intel path to the internal screen. This is consistent with a muxless Optimus design and makes Windows XP support substantially harder than a simple INF patch.
+- There is useful evidence that the N7110 HDMI path depends on the NVIDIA device: one Dell report states that disabling the NVIDIA adapter stopped HDMI picture output while disabling Intel did not. This makes external-HDMI operation an important XP experiment even if the internal LCD cannot use NVIDIA acceleration.
+
+### N7110 XP test plan
+
+The target should be treated as a staged research problem rather than a single driver-install task.
+
+1. Record BIOS version, CPU, RAM and exact motherboard/system identifiers.
+2. Boot a known-good Windows 7 installation and record exact Intel/NVIDIA PCI IDs, SUBSYS IDs, ACPI devices, display topology and which GPU owns each physical connector.
+3. Update BIOS only if technically justified; preserve the existing version and recovery path first.
+4. Build XP Professional SP3 x86 media with the correct Intel AHCI/storage driver integrated so Setup boots natively without IDE fallback.
+5. Install Intel chipset and Intel HD Graphics 3000 XP drivers first.
+6. Install the official NVIDIA 307.83 XP package unchanged if it matches the exact PCI/SUBSYS ID.
+7. If only the OEM SUBSYS match is missing, generate a documented minimal INF patch from the official NVIDIA package and record original package version/hash plus the patch.
+8. Validate device state: no Code 10/Code 43, no BSOD, correct clocks/memory detection.
+9. Test Direct3D/OpenGL on the NVIDIA device, not merely Device Manager enumeration.
+10. Test HDMI output separately with Intel enabled and NVIDIA enabled.
+11. Test internal LCD rendering and determine whether any usable render-offload path exists under XP.
+12. Only after those steps evaluate deeper approaches such as ACPI/firmware experimentation. BIOS modification is a high-risk last resort and is not part of the normal FX XP path.
+
 ### Feasibility classes
 
 **A. Hardware mux or BIOS discrete-only mode exists**
@@ -98,9 +131,13 @@ Hard case. Standard XP drivers do not provide the Windows 7-era Optimus switchin
 
 An INF modification alone does not solve this architecture problem.
 
+For the Dell N7110, current evidence points strongly toward this class for the internal LCD.
+
 **C. External display output physically attached to NVIDIA**
 
 Potential special case worth testing. If the NVIDIA device can initialize under XP, an externally connected display path may offer a route even when the internal panel is Intel-only. This is hardware-specific and must be verified experimentally.
+
+For the Dell N7110, HDMI is a priority experiment because existing user evidence suggests the HDMI output depends on the NVIDIA adapter.
 
 ### Research policy
 
