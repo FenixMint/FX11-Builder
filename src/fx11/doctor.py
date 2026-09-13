@@ -18,6 +18,7 @@ class ToolCheck:
 CORE_TOOLS = (
     ("wimlib", "wimlib-imagex", "wimtools"),
     ("xorriso", "xorriso", "xorriso"),
+    ("7-Zip UDF reader", "7z", "7zip"),
     ("GRUB UEFI builder", "grub-mkstandalone", "grub-efi-amd64-bin"),
 )
 
