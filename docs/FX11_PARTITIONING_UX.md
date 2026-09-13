@@ -2,7 +2,7 @@
 
 This document defines the user-facing partitioning flow for FX11 Installer.
 
-The goal is simple: automatic partitioning should be easy to understand, while destructive operations must never be ambiguous.
+The goal is simple: partitioning should be understandable for beginners and unrestricted enough for advanced users, while destructive operations must never be ambiguous.
 
 ## Core rule
 
@@ -13,7 +13,8 @@ Before changing a disk, FX11 must explain:
 3. how much space FX11 will receive,
 4. how much space will remain for another operating system when a multi-OS layout is selected,
 5. whether existing partitions and files will be deleted,
-6. what will happen after confirmation.
+6. what FX11 requires versus what it merely recommends,
+7. what will happen after confirmation.
 
 The installer must show the final planned layout before making any destructive change.
 
@@ -25,7 +26,7 @@ User-facing heading:
 
 Introductory text:
 
-> Select the physical disk that should contain FX11. The selected disk may be repartitioned in the next step. Other detected disks will not be modified automatically.
+> Select the physical disk that should contain FX11. The selected disk may be repartitioned in the next step. Other detected disks will not be modified unless you explicitly choose them in Custom mode.
 
 Each disk card should show at least:
 
@@ -128,27 +129,99 @@ Destructive warning when applicable:
 
 Suggested label:
 
-**Custom — choose partitions manually**
+**Custom — build your own disk layout**
 
 Description:
 
-> For experienced users, existing multi-disk systems and unusual disk layouts. FX11 will not automatically erase or repartition the disk. You choose where Windows should be installed.
+> Full control over the disk layout. Create, delete, resize, preserve and format partitions inside FX11 Installer. FX11 will explain what Windows needs and what FX11 recommends, but you decide the final arrangement.
 
-Additional note:
+This option remains entirely inside **FX11 Installer**. The user is not pushed into the stock Windows partitioning screen merely because they chose an advanced layout.
 
-> Use this option if you need to preserve existing partitions, install FX11 into already prepared free space, or manage the disk layout yourself.
+Custom mode should show:
 
-FX11 should not present this option as dangerous; it is simply an advanced/manual path.
+- a graphical disk map,
+- a partition table,
+- filesystem/type,
+- size,
+- used/free space when detectable,
+- detected operating system or role when identification is reliable,
+- flags such as EFI System, MSR, Windows, Recovery, data or unallocated.
+
+Available actions should include, where technically supported:
+
+- **Create partition**,
+- **Delete partition**,
+- **Resize partition**,
+- **Format partition**,
+- **Leave unallocated**,
+- **Preserve unchanged**,
+- **Use as FX11**,
+- **Use as EFI System Partition**,
+- **Use as Recovery**.
+
+For multiple-disk systems, Custom mode may also let the user inspect and intentionally modify another physical disk, but FX11 must never make that choice automatically.
+
+## Guidance inside Custom mode
+
+The key UX rule is that the interface must explain the difference between **required**, **recommended** and **optional**.
+
+Suggested status chips:
+
+- **Required for FX11**
+- **Recommended by FX11**
+- **Optional**
+- **Existing / preserved**
+- **Warning**
+- **Invalid for this installation**
+
+For normal UEFI/GPT installation, an information panel should say:
+
+**What does FX11 need?**
+
+- **EFI System Partition** — required for UEFI boot. FX11 can create one or use a compatible existing ESP.
+- **Microsoft Reserved (MSR)** — part of the normal Windows GPT layout.
+- **FX11 / Windows** — NTFS partition used for Windows and FX11.
+- **Windows Recovery** — strongly recommended for WinRE, repair and servicing. The user may see the consequence before choosing a layout without it where technically supported.
+
+The user should never have to memorize Windows partitioning rules. FX11 should continuously validate the layout and tell them what is missing or unusual.
+
+Examples of messages:
+
+> **EFI System Partition missing.** FX11 cannot boot in UEFI mode without a usable ESP. Create one or select an existing compatible ESP.
+
+> **Recovery partition not selected.** FX11 recommends a Recovery partition so Windows Recovery Environment remains available. You can continue without it only if this installation path supports that choice.
+
+> **Existing Linux partition detected.** This partition will be preserved unless you explicitly delete, resize or format it.
+
+> **Existing ESP selected.** FX11 will add its boot files to this EFI System Partition and preserve existing boot entries where possible.
+
+> **Unallocated space will remain after installation.** You can use it later for another operating system or data partition.
+
+## Staged changes — nothing happens immediately
+
+Custom partition editing should work like a transaction.
+
+Clicking **Delete**, **Create**, **Resize** or **Format** changes only the proposed layout on screen. The actual disk is untouched until the final review and confirmation.
+
+The interface should visually distinguish:
+
+- current partitions,
+- newly created partitions,
+- partitions scheduled for deletion,
+- partitions scheduled for resize,
+- partitions scheduled for format,
+- partitions preserved unchanged,
+- unallocated space.
+
+An **Undo** action should be available before commit.
 
 ## Step 3 — Explain the Windows partitions
 
 The preview screen should let the user expand a small **What are these partitions?** explanation.
 
-Suggested text:
-
 ### EFI System Partition
 
-> A small system partition used by UEFI firmware to start Windows and other operating systems. It normally has no drive letter and should not be used for personal files.
+> A small FAT32 system partition used by UEFI firmware to start Windows and other operating systems. It normally has no drive letter and should not be used for personal files.
 
 ### Microsoft Reserved (MSR)
 
@@ -160,7 +233,7 @@ Suggested text:
 
 ### Recovery
 
-> Contains Windows recovery tools used for troubleshooting and repair. FX11 keeps a supported Windows recovery layout instead of removing this partition to save a small amount of disk space.
+> Contains Windows recovery tools used for troubleshooting and repair. FX11 recommends keeping a supported Recovery layout instead of removing it simply to save a small amount of disk space.
 
 ### Unallocated — Other OS
 
@@ -172,17 +245,24 @@ User-facing heading:
 
 **Review the disk layout**
 
-The screen must show:
+The screen must show, for every disk affected:
 
-- selected physical disk,
 - disk model and capacity,
-- selected mode,
-- graphical partition bar,
+- current layout,
+- proposed layout,
 - exact sizes,
-- whether existing data will be deleted,
-- a plain-language description of what happens after confirmation.
+- partitions to be deleted,
+- partitions to be created,
+- partitions to be resized,
+- partitions to be formatted,
+- partitions preserved unchanged,
+- FX11 target partition,
+- selected EFI System Partition,
+- selected Recovery partition,
+- remaining unallocated space,
+- plain-language consequences.
 
-Example summary:
+Example automatic summary:
 
 **Target:** Disk 0 — Samsung SSD 990 PRO — 1 TB  
 **Mode:** FX11 + Other OS  
@@ -190,23 +270,37 @@ Example summary:
 **Other OS:** approximately 600 GB unallocated  
 **Action:** The current partition layout on Disk 0 will be removed and replaced with the layout shown above. No other physical disk will be modified automatically.
 
+Example Custom summary:
+
+**Disk 0 — Samsung SSD 990 PRO — 1 TB**  
+- Preserve existing EFI System Partition — 300 MB  
+- Preserve Linux partition — 220 GB  
+- Delete old Windows partition — 300 GB  
+- Create FX11 / Windows — 450 GB NTFS  
+- Create Windows Recovery — 1 GB NTFS  
+- Leave 29 GB unallocated  
+
+FX11 should state exactly which operations are destructive.
+
 ## Destructive confirmation
 
 The main action must not simply say `Next`.
 
-Suggested button text:
+For a whole-disk replacement:
 
 **Erase selected disk and create this layout**
 
-For layouts that do not erase the whole disk, use wording matching the actual operation instead.
+For Custom mode:
+
+**Apply these partition changes**
 
 Immediately above the button:
 
-> This operation changes disk partitions and may permanently remove existing files from the selected disk. Make sure important data has been backed up and confirm that the disk model and capacity shown above are correct.
+> This operation will apply the partition changes listed above. Deleted or formatted partitions may permanently lose their files. Check the physical disk model, capacity and every destructive action before continuing.
 
 FX11 should require an explicit confirmation checkbox such as:
 
-**I understand that the selected disk will be repartitioned and existing data on it may be permanently deleted.**
+**I have reviewed the listed disk changes and understand which partitions may lose data.**
 
 Only after this confirmation should the destructive action become available.
 
@@ -216,17 +310,17 @@ If more than one physical disk is detected, FX11 must make this obvious.
 
 Suggested notice:
 
-> Multiple physical disks were detected. FX11 will modify only the disk selected below. Check the model and capacity carefully before continuing.
+> Multiple physical disks were detected. Guided modes modify only the selected target disk. Custom mode can modify additional disks only when you explicitly select and edit them.
 
-The installer must never automatically choose another disk because it appears empty, is listed first by firmware or has a particular disk number.
+FX11 must never automatically choose another disk because it appears empty, is listed first by firmware or has a particular disk number.
 
 ## Existing operating systems
 
-If an existing Windows, Linux, BSD, Unix-like or other operating-system installation is detected on the selected disk, the installer should say so where detection is reliable.
+If an existing Windows, Linux, BSD, Unix-like or other operating-system installation is detected, the installer should identify it where reliable.
 
 Suggested warning:
 
-> An existing operating-system installation appears to be present on this disk. Choosing an automatic clean-install layout will remove its partitions. Choose **Custom** if you intend to preserve the existing installation.
+> An existing operating-system installation appears to be present. It will be preserved unless the proposed layout explicitly deletes, formats or overwrites its partitions.
 
 Detection is advisory only; if identification is uncertain, FX11 should describe the existing partitions rather than guess which operating system they contain.
 
@@ -238,9 +332,13 @@ It must not preselect a destructive action in a way that allows the user to eras
 
 For multi-OS users, the UI should emphasize that **FX11 + Other OS reserves space but does not install the second operating system**.
 
+Custom mode should be presented as **full control with guidance**, not as a dangerous hidden expert option.
+
 ## After partitioning
 
-Once the selected layout has been created successfully, the installer can continue to Windows installation without asking the user to manually select the partitions that FX11 just created.
+Once the selected layout has been created successfully, FX11 Installer should continue to Windows installation without asking the user to manually select the partitions that FX11 just created or selected.
+
+FX11 passes the chosen Windows target, ESP and Recovery configuration into the deployment stage.
 
 For the FX11 + Other OS mode, the installer should remember that the machine was prepared for another operating system so that FX11 Control Center can later show a non-intrusive **Multi-OS Guide** explaining the next steps for Linux, BSD, Unix-like and other compatible operating systems.
 
