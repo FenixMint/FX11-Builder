@@ -13,6 +13,7 @@ sudo apt-get install -y \
   python3-pip \
   wimtools \
   xorriso \
+  grub-efi-amd64-bin \
   qemu-system-x86 \
   ovmf
 
