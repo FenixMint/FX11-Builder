@@ -9,6 +9,7 @@ from . import __version__
 from .audit import write_delta_report
 from .builder import build_iso, inspect_source, validate_output_iso
 from .doctor import host_report
+from .gparted import GPARTED_LIVE, verify_gparted_live
 from .iso import BuilderError, Edition, find_edition
 from .profiles import PROFILES, get_profile, validate_profile
 from .vm import launch_qemu
@@ -73,6 +74,27 @@ def command_inspect(source: Path) -> int:
         temp.cleanup()
 
 
+def command_gparted(args: argparse.Namespace) -> int:
+    if args.gparted_command == "info":
+        print("FX11 pinned GParted Live input")
+        print(f"Version : {GPARTED_LIVE.version}")
+        print(f"GParted : {GPARTED_LIVE.gparted_version}")
+        print(f"Arch    : {GPARTED_LIVE.architecture}")
+        print(f"Kernel  : {GPARTED_LIVE.kernel}")
+        print(f"File    : {GPARTED_LIVE.filename}")
+        print(f"SHA256  : {GPARTED_LIVE.sha256}")
+        print(f"Release : {GPARTED_LIVE.release_page}")
+        return 0
+    if args.gparted_command == "verify":
+        verified = verify_gparted_live(args.iso)
+        print("GParted Live input verified")
+        print(f"Version : {verified.spec.version}")
+        print(f"File    : {verified.path}")
+        print(f"SHA256  : {verified.sha256}")
+        return 0
+    return 1
+
+
 def _choose_edition(editions: tuple[Edition, ...], index: int | None, query: str | None) -> Edition:
     if index is not None or query:
         return find_edition(editions, index=index, query=query)
@@ -106,6 +128,10 @@ def command_build(args: argparse.Namespace) -> int:
         print(f"\nSelected: {edition.index}. {edition.name}")
         print(f"Source SHA256: {inspection.source_sha256}")
         command_plan(profiles)
+        if args.gparted_live is not None:
+            verified = verify_gparted_live(args.gparted_live)
+            print(f"\nGParted Live: {verified.spec.version} ({verified.sha256})")
+            print("The exact pinned upstream image will be staged in the FX11 ISO; top-level FX media GRUB boot integration is the next checkpoint.")
         if args.dry_run:
             print("\nBuild not started because --dry-run was specified.")
             return 0
@@ -113,13 +139,22 @@ def command_build(args: argparse.Namespace) -> int:
         if output is None:
             output = Path.cwd() / f"{inspection.source.stem}-FX11-{_slug(edition.name)}.iso"
         print(f"\nBuilding: {output}")
-        result = build_iso(inspection, edition, output, profiles, force=args.force)
+        result = build_iso(
+            inspection,
+            edition,
+            output,
+            profiles,
+            gparted_live=args.gparted_live,
+            force=args.force,
+        )
         print("\nBUILD VALID")
         print(f"ISO    : {result.output_iso}")
         print(f"SHA256 : {result.output_sha256}")
         print(f"SUM    : {result.checksum_file}")
         print(f"Edition: {result.edition.name}")
         print(f"Profiles: {', '.join(result.profiles)}")
+        if result.gparted_live:
+            print(f"GParted Live staged: {result.gparted_live}")
         return 0
     finally:
         temp.cleanup()
@@ -176,6 +211,12 @@ def build_parser() -> argparse.ArgumentParser:
     inspect = sub.add_parser("inspect", help="Inspect a Windows ISO and list all Home/Pro/Enterprise/etc. images")
     inspect.add_argument("source", type=Path)
 
+    gparted = sub.add_parser("gparted", help="Show or verify the pinned GParted Live build input")
+    gparted_sub = gparted.add_subparsers(dest="gparted_command", required=True)
+    gparted_sub.add_parser("info", help="Show the currently pinned GParted Live release")
+    gparted_verify = gparted_sub.add_parser("verify", help="Verify a local GParted Live ISO against the pinned SHA-256")
+    gparted_verify.add_argument("iso", type=Path)
+
     build = sub.add_parser("build", help="Build a selected Windows 11 edition")
     build.add_argument("source", type=Path, help="Original Microsoft Windows 11 ISO")
     select = build.add_mutually_exclusive_group()
@@ -183,6 +224,11 @@ def build_parser() -> argparse.ArgumentParser:
     select.add_argument("--edition", help="Edition name or EditionID, e.g. 'Windows 11 Pro' or Professional")
     build.add_argument("-o", "--output", type=Path)
     build.add_argument("--profile", action="append", default=[], dest="profiles", choices=sorted(PROFILES))
+    build.add_argument(
+        "--gparted-live",
+        type=Path,
+        help=f"Stage the pinned {GPARTED_LIVE.filename} for the graphical FX Partition Manager path",
+    )
     build.add_argument("--dry-run", action="store_true")
     build.add_argument("--force", action="store_true")
 
@@ -214,6 +260,8 @@ def main() -> int:
             return command_plan(args.profiles)
         if args.command == "inspect":
             return command_inspect(args.source)
+        if args.command == "gparted":
+            return command_gparted(args)
         if args.command == "build":
             return command_build(args)
         if args.command == "validate":
