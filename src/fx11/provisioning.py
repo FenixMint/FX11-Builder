@@ -142,7 +142,7 @@ if not exist "%LOGDIR%" mkdir "%LOGDIR%"
 set "FX11PS=%WINDIR%\Setup\Scripts\FX11.ps1"
 set "EXPECTED={expected_ps1_sha256.lower()}"
 echo [%DATE% %TIME%] FX11 Builder SetupComplete starting>>"%LOGDIR%\setupcomplete.log"
-for /f "usebackq delims=" %%H in (`powershell.exe -NoLogo -NoProfile -NonInteractive -Command "(Get-FileHash -Algorithm SHA256 -LiteralPath $env:WINDIR'\Setup\Scripts\FX11.ps1').Hash.ToLowerInvariant()"`) do set "ACTUAL=%%H"
+for /f "usebackq delims=" %%H in (`powershell.exe -NoLogo -NoProfile -NonInteractive -Command "(Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $env:WINDIR 'Setup\Scripts\FX11.ps1')).Hash.ToLowerInvariant()"`) do set "ACTUAL=%%H"
 if /I not "%ACTUAL%"=="%EXPECTED%" (
   echo [%DATE% %TIME%] SECURITY ERROR: FX11.ps1 SHA256 mismatch. Expected %EXPECTED%, got %ACTUAL%>>"%LOGDIR%\setupcomplete.log"
   exit /b 10
