@@ -61,8 +61,21 @@ assert images[0].findtext("NAME") == "Windows 11 Pro"
 assert images[0].findtext("WINDOWS/EDITIONID") == "Professional"
 PY
 
+xorriso -osirrox on -indev "$ROOT/output.iso" -extract /sources/boot.wim "$ROOT/output-boot.wim" >/dev/null 2>&1
+mkdir -p "$ROOT/boot-check"
+wimlib-imagex extract "$ROOT/output-boot.wim" 2 \
+  /Windows/System32/startnet.cmd \
+  /Windows/System32/winpeshl.ini \
+  /FX11/fx11-launch.cmd \
+  --dest-dir="$ROOT/boot-check" --no-acls >/dev/null
+
+grep -qi "wpeinit" "$ROOT/boot-check/Windows/System32/startnet.cmd"
+grep -q "FX11\\fx11-launch.cmd" "$ROOT/boot-check/Windows/System32/startnet.cmd"
+grep -qi "startnet.cmd" "$ROOT/boot-check/Windows/System32/winpeshl.ini"
+grep -q "FX Partition Manager bootstrap loaded" "$ROOT/boot-check/FX11/fx11-launch.cmd"
+
 xorriso -indev "$ROOT/output.iso" -ls '/sources/$OEM$/$$/Setup/Scripts/SetupComplete.cmd' >/dev/null 2>&1
 xorriso -indev "$ROOT/output.iso" -ls '/sources/$OEM$/$$/Setup/Scripts/FX11.ps1' >/dev/null 2>&1
 xorriso -indev "$ROOT/output.iso" -ls '/FX11-manifest.json' >/dev/null 2>&1
 
-echo "FX11 synthetic end-to-end build: PASS"
+echo "FX11 synthetic end-to-end build with WinPE handoff: PASS"
