@@ -6,6 +6,7 @@ import pytest
 from fx11.iso import BuilderError
 from fx11.media_efi import (
     MEDIA_GRUB_CONFIG_PATH,
+    MEDIA_GRUB_MODULES,
     build_media_efi_payload,
     embedded_media_config,
     parse_efi_el_torito_path,
@@ -17,6 +18,11 @@ def test_embedded_media_config_hands_off_to_staged_fx_grub_config():
     text = embedded_media_config()
     assert f"search --no-floppy --file --set=fxmedia {MEDIA_GRUB_CONFIG_PATH}" in text
     assert f"configfile ($fxmedia){MEDIA_GRUB_CONFIG_PATH}" in text
+
+
+def test_media_grub_module_list_uses_search_fs_file():
+    assert "search_fs_file" in MEDIA_GRUB_MODULES
+    assert "search_file" not in MEDIA_GRUB_MODULES
 
 
 def test_parse_file_backed_efi_path_from_xorriso_report():
