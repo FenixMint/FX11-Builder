@@ -3,6 +3,7 @@ import pytest
 from fx11.gparted import GPARTED_LIVE
 from fx11.iso import BuilderError
 from fx11.media_boot import build_media_grub_config
+from fx11.media_theme import MEDIA_THEME_CONFIG_ISO_PATH, MEDIA_THEME_FONT_ISO_PATH
 
 
 def test_media_boot_defaults_to_gparted_partition_manager():
@@ -11,7 +12,8 @@ def test_media_boot_defaults_to_gparted_partition_manager():
 
     assert "set timeout=5" in text
     assert "set default='fx-partition-manager'" in text
-    assert "FX Partition Manager — powered by GParted" in text
+    assert "FX Partition Manager" in text
+    assert "powered by GParted" not in text
     assert GPARTED_LIVE.filename in text
     assert "loopback loop" in text
     assert "(loop)/live/vmlinuz" in text
@@ -21,10 +23,24 @@ def test_media_boot_defaults_to_gparted_partition_manager():
     assert "keyboard-layouts=pl" in text
 
 
-def test_media_boot_keeps_winpe_fallback_without_looping_to_fx_grub():
+def test_media_boot_loads_graphical_fx11_theme_with_text_fallback():
     text = build_media_grub_config().grub_config
 
-    assert "FX11 Installer / WinPE fallback" in text
+    assert "insmod gfxterm" in text
+    assert "insmod png" in text
+    assert "set gfxmode=auto" in text
+    assert "set gfxpayload=keep" in text
+    assert MEDIA_THEME_FONT_ISO_PATH in text
+    assert MEDIA_THEME_CONFIG_ISO_PATH in text
+    assert "terminal_output gfxterm" in text
+    assert "set theme=" in text
+
+
+def test_media_boot_keeps_winpe_entry_without_looping_to_fx_grub():
+    text = build_media_grub_config().grub_config
+
+    assert "menuentry 'FX11 Installer'" in text
+    assert "WinPE fallback" not in text
     assert "/bootmgr.efi" in text
     assert "chainloader" in text
     assert "chainloader ($winmedia)/efi/boot/bootx64.efi" not in text
