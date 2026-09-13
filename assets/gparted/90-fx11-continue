@@ -1,8 +1,8 @@
 #!/bin/sh
 set -eu
 
-# FX11 boot-time live-config hook. It does not alter GParted itself; it adds a
-# small handoff action around the upstream GParted Live environment.
+# FX11 boot-time live-config hook. It does not modify the GParted application;
+# it adds a handoff action to the surrounding GParted Live desktop.
 
 cat > /usr/local/sbin/fx11-continue-root <<'EOF'
 #!/bin/sh
@@ -56,6 +56,36 @@ fi
 EOF
 chmod 0755 /usr/local/bin/fx11-continue
 
+# GParted Live uses Fluxbox plus idesk. A freedesktop .desktop file alone is
+# therefore not sufficient to create a visible desktop icon.
+make_idesk_launcher() {
+    target_dir="$1"
+    mkdir -p "$target_dir"
+    cat > "$target_dir/fx11-installer.lnk" <<'EOF'
+table Icon
+  Caption: FX11 Installer
+  Command: /usr/local/bin/fx11-continue
+  Icon: /usr/share/pixmaps/exit.xpm
+  Width: 48
+  Height: 48
+  X: 670
+  Y: 20
+  FontSize: 08
+end
+EOF
+}
+
+# GParted's startup scripts copy this template into the live user's home.
+if [ -d /root/gparted-live/idesktop ]; then
+    make_idesk_launcher /root/gparted-live/idesktop
+fi
+
+# Also cover the case where the live user's idesk directory already exists.
+make_idesk_launcher /home/user/.idesktop
+chown -R user:user /home/user/.idesktop 2>/dev/null || true
+
+# Keep a freedesktop launcher for file-manager users as an additional fallback.
+mkdir -p /usr/share/applications
 cat > /usr/share/applications/fx11-installer.desktop <<'EOF'
 [Desktop Entry]
 Type=Application
@@ -68,7 +98,17 @@ Categories=System;
 EOF
 chmod 0644 /usr/share/applications/fx11-installer.desktop
 
-mkdir -p /home/user/Desktop
-cp /usr/share/applications/fx11-installer.desktop /home/user/Desktop/FX11-Installer.desktop
-chmod 0755 /home/user/Desktop/FX11-Installer.desktop
-chown -R user:user /home/user/Desktop
+# Add the same action near the top of the Fluxbox root menu so the handoff is
+# still reachable even if an idesk refresh behaves differently on a machine.
+add_fluxbox_entry() {
+    menu="$1"
+    [ -f "$menu" ] || return 0
+    grep -q "FX11 Installer" "$menu" && return 0
+    sed -i '/^\[begin\]/a\  [exec] (FX11 Installer) {/usr/local/bin/fx11-continue}' "$menu"
+}
+
+add_fluxbox_entry /etc/X11/fluxbox/fluxbox.menu-user
+add_fluxbox_entry /home/user/.fluxbox/menu
+
+# Leave a small marker that can be checked from a terminal during debugging.
+: > /run/fx11-gparted-handoff-ready
