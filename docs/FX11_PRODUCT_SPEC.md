@@ -126,12 +126,14 @@ The module should:
 - explain in plain language what WSL2 is and when it is useful,
 - offer to enable the required Windows features only after explicit user selection,
 - let the user choose which Linux distribution to install from the distributions currently available to WSL,
-- show short descriptions for popular choices such as Ubuntu, Debian, openSUSE and Kali where available,
+- prominently suggest **Fedora, Debian and AlmaLinux** when they are available through the supported WSL installation sources,
+- not promote or suggest Ubuntu in FX11's recommended WSL2 choices,
+- allow other currently available WSL distributions to remain visible so the user keeps full choice,
 - allow installation to be skipped and revisited later,
 - include a short getting-started guide after installation,
 - provide basic commands for updating packages, accessing Windows files, launching Linux shells and shutting down/restarting WSL,
 - include notes for developers about Git, SSH, Python, containers and command-line tooling where appropriate,
-- avoid hard-coding a distro list that could become stale; the implementation should query the currently supported/available WSL distributions at runtime.
+- avoid hard-coding the complete distro list; the implementation should query the currently supported/available WSL distributions at runtime and apply FX11's recommendation labels to Fedora, Debian and AlmaLinux where present.
 
 ### Installer disk layout and automatic partitioning
 
@@ -140,15 +142,21 @@ Disk layout is a **pre-installation installer decision**. FX11 Installer must pr
 The installer should offer at least these modes:
 
 - **FX11 — entire disk** — automatically prepare the selected target disk for a standard UEFI/GPT Windows 11 installation and allocate the remaining usable space to Windows.
-- **FX11 + Linux dual boot** — automatically prepare the Windows-required partitions, create the Windows partition at the selected size, and leave the chosen remainder of the disk **unallocated** for a later native Linux installation.
+- **FX11 + Other OS** — automatically prepare the Windows-required partitions, create the FX11/Windows partition at the selected size, and leave the chosen remainder of the disk **unallocated** for another operating system.
 - **Custom / advanced** — do not apply an automatic layout; hand control to an advanced partition-selection flow for users who need an existing or unusual disk layout.
 
-For the dual-boot automatic mode the user must be able to choose the amount of disk space allocated to FX11 versus Linux, preferably by size and/or a simple visual slider. FX11 should not guess a Linux filesystem or create Linux root/home/swap partitions itself. The reserved Linux area remains unallocated so the later Linux installer can partition it according to the chosen distribution's own requirements.
+**Other OS** means another operating system installed alongside FX11. User-facing examples may include **Linux Mint, Fedora, openSUSE, Rocky Linux, AlmaLinux, Debian, Arch Linux, FreeBSD and OpenBSD**. Ubuntu is not part of FX11's recommendation/example list.
+
+For the FX11 + Other OS automatic mode the user must be able to choose the amount of disk space allocated to **FX11** versus **Other OS**, preferably by both a visual slider and exact size fields. The slider labels must be:
+
+**FX11** ↔ **Other OS**
+
+FX11 must not assume the second operating system is Linux. It should not create ext4, Btrfs, swap, `/home`, BSD-specific partitions or any other OS-specific layout. The **Other OS** area remains unallocated so the installer of the selected operating system can create the filesystems and partitions it actually requires.
 
 Before any destructive automatic partitioning, FX11 Installer must:
 
 1. clearly identify the target physical disk by model, capacity and disk number,
-2. show the proposed partition layout and resulting Windows/Linux space,
+2. show the proposed partition layout and resulting FX11/Other OS space,
 3. warn that existing partitions/data on the selected target disk will be removed when the chosen mode requires a clean-disk layout,
 4. require a separate explicit confirmation,
 5. never automatically modify another detected disk,
@@ -158,9 +166,9 @@ The automatic UEFI/GPT layout must preserve the partitions required for a suppor
 
 A typical user-facing flow should therefore be:
 
-**Where do you want to install FX11?** -> choose physical disk -> **Choose disk layout** -> `FX11 only` / `FX11 + Linux` / `Custom` -> choose Windows/Linux space if applicable -> review graphical partition plan -> confirm destructive changes -> automatic partitioning -> Windows installation.
+**Where do you want to install FX11?** -> choose physical disk -> **Choose disk layout** -> `FX11 only` / `FX11 + Other OS` / `Custom` -> choose FX11/Other OS space if applicable -> review graphical partition plan -> confirm destructive changes -> automatic partitioning -> Windows installation.
 
-Dual boot itself is completed later by installing the chosen Linux distribution into the reserved unallocated space. FX11 Control Center may provide a post-installation **Dual Boot Guide**, but partition planning belongs to the installer, not First Run.
+Multi-OS setup itself is completed later by installing the selected second operating system into the reserved unallocated space. FX11 Control Center may provide a post-installation **Multi-OS Guide**, but partition planning belongs to the installer, not First Run.
 
 ## Application installation policy
 
@@ -218,11 +226,11 @@ Pre-installation environment responsible for disk and installation choices.
 Responsibilities:
 - identify available physical disks,
 - let the user select the target disk,
-- offer standard, dual-boot and custom partitioning modes,
+- offer standard, FX11 + Other OS and custom partitioning modes,
 - preview the proposed disk layout,
 - perform confirmed automatic partitioning,
-- leave Linux space unallocated in the dual-boot mode,
-- continue into the Windows installation using the prepared Windows target.
+- leave Other OS space unallocated in the multi-OS mode,
+- continue into the Windows installation using the prepared FX11/Windows target.
 
 ### FX11 First Run
 Runs after normal Windows OOBE and first interactive user sign-in.
@@ -246,7 +254,7 @@ Planned sections:
 - Applications,
 - Privacy,
 - Linux / WSL2,
-- Dual Boot Guide,
+- Multi-OS Guide,
 - Windows,
 - Updates,
 - FX11 Status.
