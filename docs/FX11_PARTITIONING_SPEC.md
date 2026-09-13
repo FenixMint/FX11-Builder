@@ -4,17 +4,44 @@ Status: implementation baseline for FX11 Installer.
 
 This specification defines how FX11 should partition disks before Windows installation. It follows Microsoft's current Windows 11 UEFI/GPT deployment guidance while preserving FX11's core principle: **Your System. Your Rules.**
 
+## Boot and installation flow
+
+FX11 installation media is designed to boot directly from **USB flash drive or DVD**.
+
+The installation sequence is intentionally split into two visible stages:
+
+1. **FX Partition Manager**
+2. **FX11 Installer**
+
+The boot flow is:
+
+`Boot from USB/DVD -> FX Partition Manager -> disk/layout configuration -> review and apply partition plan -> FX11 Installer -> Windows deployment to the prepared FX11 target -> first boot/OOBE`
+
+**FX Partition Manager runs before the Windows installation stage.** It owns disk discovery, partition planning and all user-facing disk decisions. The Windows deployment stage does not ask the user to repeat the same partition choices after a valid layout has already been prepared.
+
+After the user confirms and FX Partition Manager successfully applies the selected layout, it passes the resulting installation context to FX11 Installer. That context must identify at least:
+
+- selected physical disk,
+- selected FX11 / Windows target partition,
+- selected EFI System Partition,
+- selected Recovery partition when present,
+- partitions marked to be preserved,
+- unallocated space reserved for Other OS when present,
+- selected layout mode and any acknowledged warnings.
+
+FX11 Installer then installs the selected Windows image according to that prepared layout. It must not silently repartition the disk again or choose a different target on its own.
+
+If the layout fails validation or the partitioning operation fails, FX11 Installer must not start. Control stays in FX Partition Manager until the problem is corrected or the user explicitly cancels/reboots.
+
 ## Decision
 
-FX11 partitioning is handled by the **FX11 Installer before standard Windows Setup**.
+FX11 partitioning is handled by the **FX Partition Manager before FX11 Installer begins Windows deployment**.
 
-The user never has to leave the FX11 partitioning experience merely because they choose an advanced layout. FX11 owns all three modes:
+The user never has to leave the FX11 partitioning experience merely because they choose an advanced layout. FX Partition Manager owns all three modes:
 
 1. **FX11 only** — guided automatic layout.
 2. **FX11 + Other OS** — guided automatic multi-OS layout.
-3. **Custom / advanced** — fully user-controlled layout inside FX11 Installer.
-
-Standard Windows Setup is launched only after the FX11 partitioning stage has finished or the user explicitly chooses to continue with an already prepared layout.
+3. **Custom / advanced** — fully user-controlled layout inside FX Partition Manager.
 
 Legacy BIOS/MBR is not part of the normal FX11 layout. If support is added later, it should be a separate advanced path rather than silently changing the partition scheme.
 
@@ -108,7 +135,7 @@ Reserving space does not guarantee that every operating system supports the mach
 
 ## Custom / advanced mode
 
-Custom mode is **not** a hand-off to the stock Windows partition screen. It remains inside FX11 Installer.
+Custom mode is **not** a hand-off to the stock Windows partition screen. It remains inside FX Partition Manager.
 
 The goal is to give an advanced user full control while continuously explaining what FX11 needs.
 
@@ -209,20 +236,25 @@ In guided clean-layout modes, the sequence is conceptually:
 
 In Custom mode, FX11 instead generates an explicit operation plan from the user's choices. A whole-disk `clean` is used only when the user has explicitly chosen an action equivalent to erasing the disk.
 
-The Linux-side Builder never executes DiskPart or modifies physical disks. Actual disk enumeration and changes occur only in the Windows PE FX11 Installer environment.
+The Linux-side Builder never executes DiskPart or modifies physical disks. Actual disk enumeration and changes occur only in the Windows PE FX11 installation environment.
 
 ## Installation continuation
 
-After partitioning succeeds, FX11 Installer should continue directly with the prepared Windows target rather than forcing the user to identify the same partition again.
+After partitioning succeeds, FX Partition Manager starts FX11 Installer with the prepared installation context rather than forcing the user to identify the same partitions again.
 
 The final deployment path must:
 
 - apply the selected Windows image to the chosen FX11 partition,
-- install UEFI boot files to the ESP chosen in FX11 Installer,
+- install UEFI boot files to the ESP chosen in FX Partition Manager,
 - deploy/configure WinRE when a Recovery partition is part of the chosen layout,
 - register the selected Recovery environment correctly,
 - never place FX11 boot files on another physical disk merely because another ESP is already present,
-- preserve every partition that the confirmed plan marked as unchanged.
+- preserve every partition that the confirmed plan marked as unchanged,
+- avoid any automatic repartitioning after control has passed from FX Partition Manager to FX11 Installer.
+
+The division of responsibilities is therefore explicit:
+
+**FX Partition Manager decides and prepares the disk. FX11 Installer installs onto that prepared layout.**
 
 ## Implementation model
 
@@ -230,4 +262,4 @@ The final deployment path must:
 
 Guided layout planning can already be unit-tested on Linux. The next implementation step is to extend the planning model so Custom mode contains explicit user-defined partition operations instead of being represented as an empty/no-op layout.
 
-Actual disk enumeration, graphical editing, explicit confirmation and partition execution belong to the Windows PE FX11 Installer layer and must first be tested against disposable QEMU virtual disks.
+Actual disk enumeration, graphical editing, explicit confirmation and partition execution belong to the Windows PE FX Partition Manager layer and must first be tested against disposable QEMU virtual disks.
