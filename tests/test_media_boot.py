@@ -32,6 +32,13 @@ def test_media_boot_defaults_to_gparted_partition_manager():
     assert "keyboard-layouts=pl" in text
 
 
+def test_media_boot_uses_real_grub_file_search_module_name():
+    text = build_media_grub_config().grub_config
+
+    assert "insmod search_fs_file" in text
+    assert "insmod search_file" not in text
+
+
 def test_media_boot_prefers_efi_theme_and_keeps_iso_fallback():
     text = build_media_grub_config().grub_config
 
