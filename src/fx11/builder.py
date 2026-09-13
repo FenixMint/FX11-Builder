@@ -10,6 +10,7 @@ import sys
 import tempfile
 
 from . import __version__
+from .bootmanager import build_unsigned_payload
 from .iso import BuilderError, Edition, IsoInspection, inspect_iso, run_checked, sha256_file
 from .profiles import get_profile, validate_profile
 from .provisioning import write_provisioning_files
@@ -74,6 +75,7 @@ def _build_tools() -> dict[str, object]:
         "python": {"path": sys.executable, "version": sys.version.split()[0]},
         "wimlib-imagex": _tool_record("wimlib-imagex", ["--version"]),
         "xorriso": _tool_record("xorriso", ["-version"]),
+        "grub-mkstandalone": _tool_record("grub-mkstandalone", ["--version"]),
     }
 
 
@@ -82,6 +84,7 @@ def _manifest(
     edition: Edition,
     profile_ids: list[str],
     injected_hashes: dict[str, str],
+    boot_hashes: dict[str, str],
 ) -> dict[str, object]:
     return {
         "project": "FX11 Builder",
@@ -107,12 +110,32 @@ def _manifest(
                 "sha256": injected_hashes["FX11.ps1"],
                 "purpose": "Declared FX11 provisioning actions",
             },
+            "/FX11/boot/EFI/FX11/fxbootx64.efi": {
+                "sha256": boot_hashes["fxbootx64.efi"],
+                "purpose": "Unsigned development FX Boot Manager UEFI binary",
+            },
+            "/FX11/boot/EFI/FX11/grub.cfg": {
+                "sha256": boot_hashes["grub.cfg"],
+                "purpose": "FX Boot Manager GRUB configuration template",
+            },
+            "/FX11/boot/EFI/FX11/theme/theme.txt": {
+                "sha256": boot_hashes["theme.txt"],
+                "purpose": "FX Boot Manager visual theme",
+            },
+        },
+        "boot_manager": {
+            "name": "FX Boot Manager",
+            "implementation": "GRUB x86_64 UEFI standalone development payload",
+            "secure_boot_compatible": False,
+            "secure_boot_policy": "Current development payload requires Secure Boot to be disabled; firmware settings are never changed automatically.",
+            "installation_role": "Installed later by FX11 Installer onto the selected ESP after Windows boot files are prepared.",
         },
         "strategy": {
             "edition": "selected image exported with wimlib to a single-image install.wim",
             "debloat": "Windows SetupComplete removes declared provisioned AppX packages using Windows servicing APIs",
             "privacy": "machine/default-user policy applied during SetupComplete",
-            "boot": "original ISO boot metadata replayed by xorriso",
+            "iso_boot": "original ISO boot metadata replayed by xorriso",
+            "installed_boot": "FX Boot Manager development payload is embedded for later ESP installation; FX11 chainloads Windows Boot Manager",
             "integrity": "SetupComplete verifies the SHA-256 of FX11.ps1 before executing it",
         },
         "preserved": [
@@ -146,6 +169,9 @@ def validate_output_iso(iso: Path) -> None:
         "/sources/$OEM$/$$/Setup/Scripts/SetupComplete.cmd",
         "/sources/$OEM$/$$/Setup/Scripts/FX11.ps1",
         "/FX11-manifest.json",
+        "/FX11/boot/EFI/FX11/fxbootx64.efi",
+        "/FX11/boot/EFI/FX11/grub.cfg",
+        "/FX11/boot/EFI/FX11/theme/theme.txt",
     )
     missing = [item for item in required if not _iso_has_path(iso, item)]
     if missing:
@@ -180,7 +206,13 @@ def build_iso(
         root = Path(temporary)
         selected_wim = export_selected_edition(inspection, edition, root / "install.wim")
         setup_complete, powershell, injected_hashes = write_provisioning_files(root, profile_ids)
-        manifest_data = _manifest(inspection, edition, profile_ids, injected_hashes)
+        boot_payload = build_unsigned_payload(root / "fxboot")
+        boot_hashes = {
+            "fxbootx64.efi": sha256_file(boot_payload.efi_binary),
+            "grub.cfg": sha256_file(boot_payload.grub_config),
+            "theme.txt": sha256_file(boot_payload.theme_config),
+        }
+        manifest_data = _manifest(inspection, edition, profile_ids, injected_hashes, boot_hashes)
         manifest = root / "FX11-manifest.json"
         manifest.write_text(json.dumps(manifest_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
@@ -192,6 +224,9 @@ def build_iso(
             (powershell, "/sources/$OEM$/$$/Setup/Scripts/FX11.ps1"),
             (manifest, "/FX11-manifest.json"),
             (manifest, "/sources/$OEM$/$1/FX11/manifest.json"),
+            (boot_payload.efi_binary, "/FX11/boot/EFI/FX11/fxbootx64.efi"),
+            (boot_payload.grub_config, "/FX11/boot/EFI/FX11/grub.cfg"),
+            (boot_payload.theme_config, "/FX11/boot/EFI/FX11/theme/theme.txt"),
         ]
 
         command = [
