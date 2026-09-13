@@ -2,7 +2,19 @@ FX11 BUILDER — DRUGA INSTANCJA / NOWA MASZYNA
 ==============================================
 
 Cel: uruchomić FX11 Builder na innej maszynie lub VM bez zakładania z góry,
-gdzie znajdują się pliki wejściowe.
+gdzie znajdują się pliki wejściowe. Cały workflow Buildera może być wykonany
+z terminala. GParted Live również można pobrać z terminala.
+
+UWAGA O WINDOWS ISO
+===================
+
+Repozytorium FX11 nie zawiera ani nie pobiera obrazu Windows.
+Użytkownik dostarcza własne, legalne źródłowe ISO Windows 11.
+
+Jeżeli masz bezpośredni oficjalny link Microsoft do ISO, sam plik można pobrać
+z terminala przez wget/curl. Uzyskanie aktualnego linku z serwisu Microsoft może
+jednak wymagać przejścia przez oficjalną stronę pobierania w przeglądarce.
+
 
 1. POBIERZ BUILDER
 ==================
@@ -11,6 +23,7 @@ Wybierz dowolny katalog roboczy i sklonuj repozytorium:
 
   git clone https://github.com/FenixMint/FX11-Builder.git
   cd FX11-Builder
+
 
 2. PRZYGOTUJ ŚRODOWISKO
 =======================
@@ -30,34 +43,95 @@ Oczekiwany wynik końcowy dla doctor:
 
   STATUS: READY
 
-3. USTAL RZECZYWISTE ŚCIEŻKI DO PLIKÓW
-======================================
 
-Nie zakładaj żadnego konkretnego katalogu. Najpierw ustal, gdzie faktycznie są:
+3. POBIERZ PRZYPINANY GPARTED LIVE Z TERMINALA
+=============================================
 
-- źródłowy obraz ISO Windows 11,
-- przypięty obraz GParted Live,
-- katalog, w którym ma powstać wynikowe ISO FX11.
+Najpierw sprawdź, jaką dokładnie wersję Builder ma przypiętą:
 
-Możesz wyszukać pliki np.:
+  fx11 gparted info
+
+Nie wpisuj wersji ręcznie, jeżeli nie musisz. Możesz pobrać nazwę wersji i
+pliku bezpośrednio z Buildera:
+
+  GPARTED_VERSION="$(fx11 gparted info | awk -F': ' '/^Version/{print $2}')"
+  GPARTED_FILE="$(fx11 gparted info | awk -F': ' '/^File/{print $2}')"
+
+Wskaż dowolny katalog, w którym ma zostać zapisane ISO GParted:
+
+  read -r -p "Katalog na GParted ISO: " GPARTED_DIR
+  mkdir -p "$GPARTED_DIR"
+
+Zbuduj ścieżkę docelową:
+
+  GPARTED="$GPARTED_DIR/$GPARTED_FILE"
+
+Pobierz oficjalny obraz ze SourceForge:
+
+  wget -O "$GPARTED" \
+    "https://sourceforge.net/projects/gparted/files/gparted-live-stable/${GPARTED_VERSION}/${GPARTED_FILE}/download"
+
+Jeżeli wget nie jest dostępny:
+
+  sudo apt-get install -y wget
+
+Alternatywnie curl:
+
+  curl -L --fail -o "$GPARTED" \
+    "https://sourceforge.net/projects/gparted/files/gparted-live-stable/${GPARTED_VERSION}/${GPARTED_FILE}/download"
+
+Po pobraniu ZAWSZE zweryfikuj obraz przez Builder:
+
+  fx11 gparted verify "$GPARTED"
+
+Builder porówna SHA-256 z przypiętym wydaniem. Jeżeli suma się nie zgadza,
+obrazu nie używaj.
+
+
+4. USTAL RZECZYWISTĄ ŚCIEŻKĘ DO WINDOWS ISO
+===========================================
+
+Nie zakładaj żadnego konkretnego katalogu.
+
+Jeśli nie pamiętasz, gdzie jest plik ISO, możesz wyszukać obrazy w katalogu
+domowym:
 
   find "$HOME" -type f -name '*.iso' 2>/dev/null
 
-Albo sprawdzić wybrany katalog:
-
-  ls -lh /wybrany/katalog
-
-Po ustaleniu ścieżek przypisz je jawnie do zmiennych:
+Po znalezieniu właściwego obrazu przypisz pełną ścieżkę:
 
   WINISO="/pełna/ścieżka/do/Windows.iso"
-  GPARTED="/pełna/ścieżka/do/gparted-live.iso"
-  OUT="/pełna/ścieżka/do/FX11-Home.iso"
 
-Sprawdź, czy pliki istnieją:
+Sprawdź plik:
 
-  ls -lh "$WINISO" "$GPARTED"
+  ls -lh "$WINISO"
 
-4. SPRAWDŹ ŹRÓDŁOWY WINDOWS
+Jeżeli masz oficjalny bezpośredni URL Microsoft do ISO, możesz pobrać go do
+wybranego przez siebie katalogu, np.:
+
+  read -r -p "Katalog na Windows ISO: " WINDOWS_DIR
+  mkdir -p "$WINDOWS_DIR"
+
+  # przykład użycia po wstawieniu rzeczywistego oficjalnego URL:
+  WINDOWS_URL="TU_WSTAW_OFICJALNY_BEZPOSREDNI_URL_MICROSOFT"
+  WINISO="$WINDOWS_DIR/Windows11.iso"
+  wget -O "$WINISO" "$WINDOWS_URL"
+
+Nie używaj przypadkowych mirrorów ani nieoficjalnych źródeł Windows.
+
+
+5. WYBIERZ MIEJSCE NA WYNIKOWE FX11 ISO
+=======================================
+
+Wskaż dowolną lokalizację:
+
+  read -r -p "Katalog na wynikowe FX11 ISO: " FX11_OUT_DIR
+  mkdir -p "$FX11_OUT_DIR"
+
+  OUT="$FX11_OUT_DIR/FX11-Home.iso"
+
+
+6. SPRAWDŹ ŹRÓDŁOWY WINDOWS
 ===========================
 
   fx11 inspect "$WINISO"
@@ -68,15 +142,15 @@ Dla Windows 11 Home wybieraj po nazwie:
 
   --edition "Windows 11 Home"
 
-5. SPRAWDŹ GPARTED LIVE
+
+7. SPRAWDŹ GPARTED LIVE
 =======================
 
   fx11 gparted info
   fx11 gparted verify "$GPARTED"
 
-Builder powinien potwierdzić przypiętą wersję i SHA-256.
 
-6. BUILD
+8. BUILD
 ========
 
   fx11 build "$WINISO" \
@@ -88,7 +162,8 @@ Jeśli wszystko przebiegnie poprawnie:
 
   BUILD VALID
 
-7. WALIDACJA
+
+9. WALIDACJA
 ============
 
   fx11 validate "$OUT"
@@ -97,14 +172,16 @@ Oczekiwany wynik:
 
   VALID: ...
 
-8. AUDYT
-========
+
+10. AUDYT
+=========
 
   fx11 audit "$WINISO" "$OUT" \
     -o "$OUT.delta.json"
 
-9. TEST QEMU / UEFI
-===================
+
+11. TEST QEMU / UEFI
+====================
 
   fx11 test "$OUT" \
     --memory 4096 \
@@ -121,14 +198,37 @@ W menu powinien być również:
 
   FX11 Installer / WinPE fallback
 
-10. WAŻNA ZASADA
-================
+
+12. PEŁNY WORKFLOW — TERMINAL
+=============================
+
+Po sklonowaniu repo i bootstrapie wszystkie operacje Buildera można wykonać
+w terminalu:
+
+- aktualizacja kodu przez git,
+- instalacja zależności,
+- doctor,
+- testy pytest,
+- pobranie GParted Live,
+- weryfikacja GParted SHA-256,
+- inspekcja źródłowego ISO Windows,
+- wybór edycji,
+- budowa FX11,
+- walidacja,
+- deep audit,
+- uruchomienie QEMU/OVMF.
+
+Jedynym elementem, którego FX11 celowo nie automatyzuje jako własne źródło,
+jest pozyskanie Windows ISO. Użytkownik dostarcza legalny nośnik Microsoft.
+Jeżeli ma oficjalny bezpośredni URL Microsoft, samo pobranie pliku również może
+odbyć się z terminala.
+
+
+13. WAŻNA ZASADA ŚCIEŻEK
+========================
 
 Instrukcje FX11 nie powinny zakładać, że pliki znajdują się np. w ~/Pobrane,
 ~/Downloads, /mnt/data ani w innym konkretnym katalogu.
 
-Zawsze najpierw ustal rzeczywistą lokalizację plików, a dopiero potem przypisz
-pełne ścieżki do zmiennych WINISO, GPARTED i OUT.
-
-Repozytorium zawiera Builder i dokumentację, ale nie zawiera obrazu Windows.
-Użytkownik dostarcza własne źródłowe ISO Windows 11.
+Zawsze najpierw ustal rzeczywistą lokalizację albo zapytaj użytkownika o katalog,
+a dopiero potem przypisz pełne ścieżki do zmiennych WINISO, GPARTED i OUT.
