@@ -14,6 +14,12 @@ from .bootmanager import build_unsigned_payload
 from .gparted import VerifiedGPartedLive, verify_gparted_live
 from .iso import BuilderError, Edition, IsoInspection, inspect_iso, run_checked, sha256_file
 from .media_boot import build_media_grub_config
+from .media_efi import (
+    MEDIA_EFI_ISO_PATH,
+    MediaEfiPayload,
+    build_media_efi_payload,
+    discover_efi_el_torito_path,
+)
 from .profiles import get_profile, validate_profile
 from .provisioning import write_provisioning_files
 from .winpe import CustomizedBootWim, customize_boot_wim
@@ -80,6 +86,7 @@ def _build_tools() -> dict[str, object]:
         "wimlib-imagex": _tool_record("wimlib-imagex", ["--version"]),
         "xorriso": _tool_record("xorriso", ["-version"]),
         "grub-mkstandalone": _tool_record("grub-mkstandalone", ["--version"]),
+        "mformat": _tool_record("mformat", ["-V"]),
     }
 
 
@@ -92,6 +99,8 @@ def _manifest(
     winpe: CustomizedBootWim,
     gparted: VerifiedGPartedLive | None,
     media_grub_sha256: str | None,
+    media_efi: MediaEfiPayload | None,
+    source_efi_path: str | None,
 ) -> dict[str, object]:
     manifest: dict[str, object] = {
         "project": "FX11 Builder",
@@ -144,7 +153,11 @@ def _manifest(
             "text_fallback_retained": True,
             "gparted_payload_staged": gparted is not None,
             "gparted_media_grub_staged": media_grub_sha256 is not None,
-            "gparted_boot_selector_status": "media GRUB config staged; UEFI El Torito handoff to FX GRUB still pending",
+            "gparted_boot_selector_status": (
+                "FX GRUB replaces the file-backed UEFI El Torito image and defaults to GParted; WinPE remains an explicit fallback"
+                if media_efi is not None
+                else "GParted media boot not enabled for this build"
+            ),
         },
         "boot_manager": {
             "name": "FX Boot Manager",
@@ -158,7 +171,11 @@ def _manifest(
             "deployment": "FX11 WinPE applies install.wim index 1 directly to the partition prepared by FX Partition Manager",
             "debloat": "FX11 provisioning scripts are staged into Windows Setup Scripts after image application; real-hardware/OOBE execution still requires validation",
             "privacy": "machine/default-user policy is applied by the staged FX11 provisioning script",
-            "iso_boot": "original ISO boot metadata replayed by xorriso; boot.wim boot image is customized to start FX11 first",
+            "iso_boot": (
+                "source boot metadata replayed by xorriso with the source file-backed EFI El Torito image replaced by FX GRUB; BIOS boot remains source-derived"
+                if media_efi is not None
+                else "original ISO boot metadata replayed by xorriso; boot.wim boot image is customized to start FX11 first"
+            ),
             "installed_boot": "BCDBoot creates reliable Windows UEFI boot files; FX Boot Manager files are staged on the ESP for later firmware-default activation",
             "integrity": "SetupComplete verifies the SHA-256 of FX11.ps1 before executing it",
         },
@@ -189,12 +206,26 @@ def _manifest(
                 "branding_policy": "FX Partition Manager — powered by GParted; upstream identity and license obligations are retained.",
             }
         }
-        if media_grub_sha256 is not None:
-            injected = manifest.get("injected_files")
-            if isinstance(injected, dict):
+        injected = manifest.get("injected_files")
+        if isinstance(injected, dict):
+            if media_grub_sha256 is not None:
                 injected["/FX11/media/grub.cfg"] = {
                     "sha256": media_grub_sha256,
                     "purpose": "Top-level FX installation-media GRUB menu for GParted mainline and WinPE fallback",
+                }
+            if media_efi is not None:
+                injected[MEDIA_EFI_ISO_PATH] = {
+                    "sha256": media_efi.sha256,
+                    "purpose": "Unsigned FAT UEFI El Torito image containing FX GRUB BOOTX64.EFI",
+                }
+                manifest["media_boot"] = {
+                    "mode": "FX GRUB UEFI El Torito",
+                    "secure_boot_compatible": False,
+                    "source_efi_el_torito_path": source_efi_path,
+                    "replacement_image_iso_path": MEDIA_EFI_ISO_PATH,
+                    "replacement_image_sha256": media_efi.sha256,
+                    "default_entry": "FX Partition Manager — powered by GParted",
+                    "fallback": "FX11 Installer / WinPE fallback",
                 }
 
     return manifest
@@ -210,7 +241,39 @@ def _iso_has_path(iso: Path, iso_path: str) -> bool:
     return proc.returncode == 0
 
 
-def validate_output_iso(iso: Path, *, extra_required: tuple[str, ...] = tuple()) -> None:
+def _verify_efi_replacement(iso: Path, expected_path: str, expected_sha256: str) -> None:
+    actual_path = discover_efi_el_torito_path(iso)
+    if actual_path != expected_path:
+        raise BuilderError(
+            f"Output EFI El Torito path changed unexpectedly: expected {expected_path}, got {actual_path}."
+        )
+    with tempfile.TemporaryDirectory(prefix="fx11-efi-check-") as temp_name:
+        extracted = Path(temp_name) / "efiboot.img"
+        run_checked([
+            "xorriso",
+            "-osirrox",
+            "on",
+            "-indev",
+            str(iso),
+            "-extract",
+            expected_path,
+            str(extracted),
+        ])
+        actual_sha256 = sha256_file(extracted)
+        if actual_sha256 != expected_sha256:
+            raise BuilderError(
+                "Output EFI El Torito image does not match the FX11 media boot image. "
+                f"Expected {expected_sha256}, got {actual_sha256}."
+            )
+
+
+def validate_output_iso(
+    iso: Path,
+    *,
+    extra_required: tuple[str, ...] = tuple(),
+    expected_efi_path: str | None = None,
+    expected_efi_sha256: str | None = None,
+) -> None:
     if not iso.is_file() or iso.stat().st_size < 1024 * 1024:
         raise BuilderError(f"Output ISO is missing or unexpectedly small: {iso}")
     required = (
@@ -231,6 +294,10 @@ def validate_output_iso(iso: Path, *, extra_required: tuple[str, ...] = tuple())
     text = (report.stdout + report.stderr).decode("utf-8", errors="replace").casefold()
     if "el torito" not in text and "boot" not in text:
         raise BuilderError("Output ISO does not appear to contain boot metadata.")
+    if (expected_efi_path is None) != (expected_efi_sha256 is None):
+        raise BuilderError("EFI replacement validation requires both path and SHA-256.")
+    if expected_efi_path is not None and expected_efi_sha256 is not None:
+        _verify_efi_replacement(iso, expected_efi_path, expected_efi_sha256)
 
 
 def build_iso(
@@ -273,11 +340,15 @@ def build_iso(
 
         media_grub: Path | None = None
         media_grub_sha256: str | None = None
+        media_efi: MediaEfiPayload | None = None
+        source_efi_path: str | None = None
         if verified_gparted is not None:
             media_boot = build_media_grub_config()
             media_grub = root / "media-grub.cfg"
             media_grub.write_text(media_boot.grub_config, encoding="utf-8")
             media_grub_sha256 = sha256_file(media_grub)
+            source_efi_path = discover_efi_el_torito_path(inspection.source)
+            media_efi = build_media_efi_payload(root / "media-efi")
 
         manifest_data = _manifest(
             inspection,
@@ -288,6 +359,8 @@ def build_iso(
             customized_boot,
             verified_gparted,
             media_grub_sha256,
+            media_efi,
+            source_efi_path,
         )
         manifest = root / "FX11-manifest.json"
         manifest.write_text(json.dumps(manifest_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -312,6 +385,10 @@ def build_iso(
         if media_grub is not None:
             maps.append((media_grub, "/FX11/media/grub.cfg"))
             required_extra_list.append("/FX11/media/grub.cfg")
+        if media_efi is not None and source_efi_path is not None:
+            maps.append((media_efi.image, MEDIA_EFI_ISO_PATH))
+            maps.append((media_efi.image, source_efi_path))
+            required_extra_list.append(MEDIA_EFI_ISO_PATH)
 
         command = [
             "xorriso",
@@ -323,11 +400,19 @@ def build_iso(
             command += ["-rm", "/sources/install.esd"]
         for local, target in maps:
             command += ["-map", str(local), target]
+        # Replay happens after all mappings. xorriso then reuses source BIOS/system-area
+        # boot metadata while the replaced file-backed EFI image becomes the new
+        # UEFI El Torito boot image.
         command += ["-boot_image", "any", "replay", "-commit", "-end"]
 
         try:
             run_checked(command)
-            validate_output_iso(partial, extra_required=tuple(required_extra_list))
+            validate_output_iso(
+                partial,
+                extra_required=tuple(required_extra_list),
+                expected_efi_path=source_efi_path if media_efi is not None else None,
+                expected_efi_sha256=media_efi.sha256 if media_efi is not None else None,
+            )
             if sha256_file(inspection.source) != inspection.source_sha256:
                 raise BuilderError("Source ISO was unexpectedly modified during the build.")
             if output_iso.exists():
