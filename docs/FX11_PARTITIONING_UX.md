@@ -11,7 +11,7 @@ Before changing a disk, FX11 must explain:
 1. which physical disk will be modified,
 2. what the selected layout will create,
 3. how much space FX11 will receive,
-4. how much space will remain for Linux when dual boot is selected,
+4. how much space will remain for another operating system when a multi-OS layout is selected,
 5. whether existing partitions and files will be deleted,
 6. what will happen after confirmation.
 
@@ -70,35 +70,41 @@ Destructive warning when applicable:
 
 > Existing partitions and files on the selected disk will be removed.
 
-### Option B — FX11 + Linux
+### Option B — FX11 + Other OS
 
 Suggested label:
 
-**FX11 + Linux — prepare the disk for dual boot**
+**FX11 + Other OS — reserve space for another operating system**
 
 Description:
 
-> Choose this option if you want to install Linux next to FX11. FX11 will automatically create the Windows partitions and reserve part of the disk for Linux.
+> Choose this option if you want FX11 and another operating system on the same computer. FX11 will automatically create the Windows partitions and reserve the selected part of the disk for the other operating system.
 
-Important explanation:
+#### What does “Other OS” mean?
 
-> FX11 does not create Linux partitions. The Linux area will remain unallocated. When you later run the installer of your chosen Linux distribution, it can use that free space and create its own filesystem, swap and other partitions according to that distribution's requirements.
+> **Other OS** means another operating system installed alongside FX11. This can be a Linux distribution such as Ubuntu, Debian, Fedora, Linux Mint, openSUSE or another Linux system; a BSD-family system such as FreeBSD or OpenBSD; or another compatible operating system that can be installed on the computer's hardware and boot configuration.
 
-Why this is safer:
+> FX11 does not assume that the second operating system is Linux. It therefore does not create Linux-specific filesystems, swap, `/home`, BSD partitions or other OS-specific structures. The reserved **Other OS** area remains unallocated so that the installer of the chosen operating system can create the layout it actually needs.
 
-> Different Linux distributions use different partition layouts and filesystems. Leaving the Linux area unallocated avoids forcing an unsuitable layout before the Linux distribution has been chosen.
+Compatibility note:
+
+> Reserving disk space does not guarantee that every operating system will install or coexist correctly with Windows 11. Hardware support, UEFI, Secure Boot, disk encryption and boot-manager behavior depend on the selected operating system. FX11 should explain these considerations in the post-installation Multi-OS Guide.
 
 The user should be able to set:
 
 - size for FX11,
-- size reserved for Linux,
+- size reserved for Other OS,
 - preferably through both a slider and exact size fields.
+
+The slider and graphical disk bar must use the labels:
+
+**FX11** ↔ **Other OS**
 
 Example visual plan:
 
-`EFI | MSR | FX11 350 GB | Recovery | 600 GB unallocated for Linux`
+`EFI | MSR | FX11 350 GB | Recovery | 600 GB unallocated — Other OS`
 
-The UI should clearly distinguish **unallocated for Linux** from a formatted Windows partition.
+The UI should clearly distinguish **unallocated — Other OS** from a formatted Windows partition.
 
 Destructive warning when applicable:
 
@@ -142,9 +148,9 @@ Suggested text:
 
 > Contains Windows recovery tools used for troubleshooting and repair. FX11 keeps a supported Windows recovery layout instead of removing this partition to save a small amount of disk space.
 
-### Unallocated for Linux
+### Unallocated — Other OS
 
-> Disk space intentionally left unused by Windows. It is reserved for a later Linux installation. The Linux installer can turn this area into the partitions and filesystems it needs.
+> Disk space intentionally left unused by Windows and reserved for another operating system. For example, a Linux or BSD installer can use this area later to create the partitions and filesystems required by that operating system.
 
 ## Step 4 — Final review before partitioning
 
@@ -165,9 +171,9 @@ The screen must show:
 Example summary:
 
 **Target:** Disk 0 — Samsung SSD 990 PRO — 1 TB  
-**Mode:** FX11 + Linux  
+**Mode:** FX11 + Other OS  
 **FX11:** 350 GB  
-**Linux:** approximately 600 GB unallocated  
+**Other OS:** approximately 600 GB unallocated  
 **Action:** The current partition layout on Disk 0 will be removed and replaced with the layout shown above. No other physical disk will be modified automatically.
 
 ## Destructive confirmation
@@ -202,7 +208,7 @@ The installer must never automatically choose another disk because it appears em
 
 ## Existing operating systems
 
-If an existing Windows or Linux installation is detected on the selected disk, the installer should say so where detection is reliable.
+If an existing Windows, Linux, BSD or other operating-system installation is detected on the selected disk, the installer should say so where detection is reliable.
 
 Suggested warning:
 
@@ -216,12 +222,12 @@ For a new/empty machine, FX11 should visually mark **FX11 only** as the simplest
 
 It must not preselect a destructive action in a way that allows the user to erase a disk through repeated `Next` clicks without reviewing the final layout.
 
-For dual-boot users, the UI should emphasize that **FX11 + Linux prepares the space but does not install Linux**.
+For multi-OS users, the UI should emphasize that **FX11 + Other OS reserves space but does not install the second operating system**.
 
 ## After partitioning
 
 Once the selected layout has been created successfully, the installer can continue to Windows installation without asking the user to manually select the partitions that FX11 just created.
 
-For the dual-boot mode, the installer should remember that the machine was prepared for Linux so that FX11 Control Center can later show a non-intrusive **Dual Boot Guide** explaining the next steps.
+For the FX11 + Other OS mode, the installer should remember that the machine was prepared for another operating system so that FX11 Control Center can later show a non-intrusive **Multi-OS Guide** explaining the next steps for Linux, BSD and other compatible operating systems.
 
 This guide must not imply that WSL2 is required. WSL2 remains an entirely separate, optional feature that can be installed later from FX11 First Run or FX11 Control Center.
