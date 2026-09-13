@@ -11,6 +11,7 @@ import tempfile
 
 from . import __version__
 from .bootmanager import build_unsigned_payload
+from .gparted import GPARTED_LIVE, VerifiedGPartedLive, verify_gparted_live
 from .iso import BuilderError, Edition, IsoInspection, inspect_iso, run_checked, sha256_file
 from .profiles import get_profile, validate_profile
 from .provisioning import write_provisioning_files
@@ -25,6 +26,7 @@ class BuildResult:
     source_sha256: str
     edition: Edition
     profiles: tuple[str, ...]
+    gparted_live: str | None = None
 
 
 def _validate_profiles(profile_ids: list[str]) -> None:
@@ -87,8 +89,9 @@ def _manifest(
     injected_hashes: dict[str, str],
     boot_hashes: dict[str, str],
     winpe: CustomizedBootWim,
+    gparted: VerifiedGPartedLive | None,
 ) -> dict[str, object]:
-    return {
+    manifest: dict[str, object] = {
         "project": "FX11 Builder",
         "builder_version": __version__,
         "build_utc": datetime.now(timezone.utc).isoformat(),
@@ -134,6 +137,12 @@ def _manifest(
             "direct_deployment": "DISM /Apply-Image -> stage FX11 provisioning -> BCDBoot -> optional WinRE",
             "stock_setup_fallback": True,
         },
+        "partition_manager": {
+            "mainline_direction": "FX-branded graphical environment powered by GParted",
+            "text_fallback_retained": True,
+            "gparted_payload_staged": gparted is not None,
+            "gparted_boot_selector_status": "pending top-level FX media GRUB integration",
+        },
         "boot_manager": {
             "name": "FX Boot Manager",
             "implementation": "GRUB x86_64 UEFI standalone development payload",
@@ -161,6 +170,25 @@ def _manifest(
         ],
     }
 
+    if gparted is not None:
+        gparted_iso_path = f"/FX11/gparted/{gparted.spec.filename}"
+        manifest["third_party"] = {
+            "gparted_live": {
+                "version": gparted.spec.version,
+                "gparted_version": gparted.spec.gparted_version,
+                "architecture": gparted.spec.architecture,
+                "kernel": gparted.spec.kernel,
+                "filename": gparted.spec.filename,
+                "iso_path": gparted_iso_path,
+                "sha256": gparted.sha256,
+                "upstream_release_page": gparted.spec.release_page,
+                "project_home": gparted.spec.project_home,
+                "branding_policy": "FX Partition Manager — powered by GParted; upstream identity and license obligations are retained.",
+            }
+        }
+
+    return manifest
+
 
 def _iso_has_path(iso: Path, iso_path: str) -> bool:
     proc = subprocess.run(
@@ -172,7 +200,7 @@ def _iso_has_path(iso: Path, iso_path: str) -> bool:
     return proc.returncode == 0
 
 
-def validate_output_iso(iso: Path) -> None:
+def validate_output_iso(iso: Path, *, extra_required: tuple[str, ...] = tuple()) -> None:
     if not iso.is_file() or iso.stat().st_size < 1024 * 1024:
         raise BuilderError(f"Output ISO is missing or unexpectedly small: {iso}")
     required = (
@@ -184,6 +212,7 @@ def validate_output_iso(iso: Path) -> None:
         "/FX11/boot/EFI/FX11/fxbootx64.efi",
         "/FX11/boot/EFI/FX11/grub.cfg",
         "/FX11/boot/EFI/FX11/theme/theme.txt",
+        *extra_required,
     )
     missing = [item for item in required if not _iso_has_path(iso, item)]
     if missing:
@@ -200,6 +229,7 @@ def build_iso(
     output_iso: Path,
     profile_ids: list[str],
     *,
+    gparted_live: Path | None = None,
     force: bool = False,
 ) -> BuildResult:
     _validate_profiles(profile_ids)
@@ -213,6 +243,11 @@ def build_iso(
     current_source_hash = sha256_file(inspection.source)
     if current_source_hash != inspection.source_sha256:
         raise BuilderError("Source ISO changed after inspection; aborting build.")
+
+    verified_gparted = verify_gparted_live(gparted_live) if gparted_live is not None else None
+    gparted_iso_path = (
+        f"/FX11/gparted/{verified_gparted.spec.filename}" if verified_gparted is not None else None
+    )
 
     with tempfile.TemporaryDirectory(prefix="fx11-build-") as temporary:
         root = Path(temporary)
@@ -232,13 +267,14 @@ def build_iso(
             injected_hashes,
             boot_hashes,
             customized_boot,
+            verified_gparted,
         )
         manifest = root / "FX11-manifest.json"
         manifest.write_text(json.dumps(manifest_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
         partial = output_iso.with_name(output_iso.name + ".building")
         partial.unlink(missing_ok=True)
-        maps = [
+        maps: list[tuple[Path, str]] = [
             (customized_boot.path, "/sources/boot.wim"),
             (selected_wim, "/sources/install.wim"),
             (setup_complete, "/sources/$OEM$/$$/Setup/Scripts/SetupComplete.cmd"),
@@ -249,6 +285,8 @@ def build_iso(
             (boot_payload.grub_config, "/FX11/boot/EFI/FX11/grub.cfg"),
             (boot_payload.theme_config, "/FX11/boot/EFI/FX11/theme/theme.txt"),
         ]
+        if verified_gparted is not None and gparted_iso_path is not None:
+            maps.append((verified_gparted.path, gparted_iso_path))
 
         command = [
             "xorriso",
@@ -262,9 +300,10 @@ def build_iso(
             command += ["-map", str(local), target]
         command += ["-boot_image", "any", "replay", "-commit", "-end"]
 
+        required_extra = (gparted_iso_path,) if gparted_iso_path is not None else tuple()
         try:
             run_checked(command)
-            validate_output_iso(partial)
+            validate_output_iso(partial, extra_required=required_extra)
             if sha256_file(inspection.source) != inspection.source_sha256:
                 raise BuilderError("Source ISO was unexpectedly modified during the build.")
             if output_iso.exists():
@@ -283,6 +322,7 @@ def build_iso(
         source_sha256=inspection.source_sha256,
         edition=edition,
         profiles=tuple(profile_ids),
+        gparted_live=verified_gparted.spec.version if verified_gparted is not None else None,
     )
 
 
