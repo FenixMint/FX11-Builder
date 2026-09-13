@@ -103,8 +103,6 @@ def list_wim_files(wim: Path, index: int) -> tuple[str, ...]:
         line = raw.strip()
         if not line or line.startswith("Available") or line.startswith("Directory of"):
             continue
-        # wimlib-imagex dir output uses Windows-style absolute paths in many
-        # builds. Keep only path-looking lines and normalize them.
         candidate = line.split()[-1].strip('"')
         if candidate.startswith(("/", "\\")):
             files.add(_normalize_path(candidate))
@@ -150,6 +148,9 @@ def build_delta_report(source_iso: Path, output_iso: Path) -> dict[str, object]:
         "/sources/$OEM$/$$/Setup/Scripts/SetupComplete.cmd",
         "/sources/$OEM$/$$/Setup/Scripts/FX11.ps1",
         "/sources/$OEM$/$1/FX11/manifest.json",
+        "/FX11/boot/EFI/FX11/fxbootx64.efi",
+        "/FX11/boot/EFI/FX11/grub.cfg",
+        "/FX11/boot/EFI/FX11/theme/theme.txt",
     }
     unexpected_added = tuple(sorted(path for path in delta.added if path not in expected_fx11_paths))
 
@@ -221,7 +222,8 @@ def build_delta_report(source_iso: Path, output_iso: Path) -> dict[str, object]:
                 "unexpected_iso_additions": list(unexpected_added),
                 "note": (
                     "FX11 currently exports the selected Windows image and performs declared AppX/privacy actions later via SetupComplete. "
-                    "Therefore a clean build is expected to have identical selected-image path inventory while ISO-level FX11 scripts/manifests are added outside install.wim."
+                    "FX Boot Manager development files are added outside install.wim and are expected ISO-level additions. "
+                    "Therefore a clean build is expected to have identical selected-image path inventory while declared FX11 files are added outside install.wim."
                 ),
             },
             "runtime_audit_required": [
@@ -236,10 +238,12 @@ def build_delta_report(source_iso: Path, output_iso: Path) -> dict[str, object]:
                 "installed drivers",
                 "installed/provisioned AppX inventory",
                 "network destinations during Setup, OOBE and FX11 First Run",
+                "installed ESP contents and UEFI boot order",
             ],
             "notes": [
                 "This v2 report performs ISO filesystem and selected install-image path inventory comparison.",
                 "Runtime state cannot be proven from ISO contents alone; the remaining runtime checks require an installed disposable VM snapshot.",
+                "The current FX Boot Manager payload is intentionally unsigned and requires Secure Boot off during development.",
                 "File-path equality inside WIM does not prove byte-for-byte equality of every file; a later forensic mode can hash selected or all WIM file payloads when performance permits.",
             ],
         }
