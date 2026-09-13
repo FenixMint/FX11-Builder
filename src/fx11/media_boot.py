@@ -7,7 +7,7 @@ from .iso import BuilderError
 
 
 FX11_MANIFEST_PATH = "/FX11-manifest.json"
-WINDOWS_MEDIA_BOOT_PATH = "/efi/boot/bootx64.efi"
+WINDOWS_MEDIA_BOOT_PATH = "/efi/microsoft/boot/bootmgfw.efi"
 
 
 @dataclass(frozen=True)
