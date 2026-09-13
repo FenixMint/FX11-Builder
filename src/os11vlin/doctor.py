@@ -12,18 +12,16 @@ class ToolCheck:
     command: str
     required: bool
     found: bool
+    package: str
 
 
 CORE_TOOLS = (
-    ("wimlib", "wimlib-imagex"),
-    ("xorriso", "xorriso"),
-    ("7-Zip", "7z"),
-    ("rsync", "rsync"),
-    ("SHA-256", "sha256sum"),
+    ("wimlib", "wimlib-imagex", "wimtools"),
+    ("xorriso", "xorriso", "xorriso"),
 )
 
 OPTIONAL_TOOLS = (
-    ("QEMU", "qemu-system-x86_64"),
+    ("QEMU", "qemu-system-x86_64", "qemu-system-x86"),
 )
 
 
@@ -42,10 +40,10 @@ def detect_distribution(os_release: Path = Path("/etc/os-release")) -> tuple[str
 
 def check_tools() -> list[ToolCheck]:
     checks: list[ToolCheck] = []
-    for name, command in CORE_TOOLS:
-        checks.append(ToolCheck(name, command, True, shutil.which(command) is not None))
-    for name, command in OPTIONAL_TOOLS:
-        checks.append(ToolCheck(name, command, False, shutil.which(command) is not None))
+    for name, command, package in CORE_TOOLS:
+        checks.append(ToolCheck(name, command, True, shutil.which(command) is not None, package))
+    for name, command, package in OPTIONAL_TOOLS:
+        checks.append(ToolCheck(name, command, False, shutil.which(command) is not None, package))
     return checks
 
 
