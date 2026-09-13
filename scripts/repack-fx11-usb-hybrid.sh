@@ -101,13 +101,15 @@ theme = build_media_theme(theme_dir)
 print(f"Updated menu : {grub_path}")
 print(f"Theme config : {theme.theme_config}")
 print(f"Background   : {theme.background}")
+print(f"FX11 logo    : {theme.logo}")
 print(f"GRUB font    : {theme.font}")
 PY
 
 THEME_CONFIG="$MEDIA_THEME_DIR/theme.txt"
 THEME_BACKGROUND="$MEDIA_THEME_DIR/background.png"
+THEME_LOGO="$MEDIA_THEME_DIR/logo.png"
 THEME_FONT="$MEDIA_THEME_DIR/unicode.pf2"
-for required in "$THEME_CONFIG" "$THEME_BACKGROUND" "$THEME_FONT"; do
+for required in "$THEME_CONFIG" "$THEME_BACKGROUND" "$THEME_LOGO" "$THEME_FONT"; do
   if [[ ! -s "$required" ]]; then
     echo "ERROR: graphical GRUB theme asset missing: $required" >&2
     exit 1
@@ -166,8 +168,8 @@ if ! grep -q "FX11/media/theme/theme.txt" "$MEDIA_GRUB"; then
   echo "ERROR: refreshed media GRUB config does not load the FX11 graphical theme." >&2
   exit 1
 fi
-if ! grep -q 'text = "FX11"' "$THEME_CONFIG"; then
-  echo "ERROR: FX11 theme identity is missing." >&2
+if ! grep -q 'file = "logo.png"' "$THEME_CONFIG"; then
+  echo "ERROR: FX11 logo is not wired into the GRUB theme." >&2
   exit 1
 fi
 if ! grep -q 'text = "Fenix"' "$THEME_CONFIG"; then
