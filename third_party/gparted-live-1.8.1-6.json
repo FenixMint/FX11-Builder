@@ -1,0 +1,14 @@
+{
+  "name": "GParted Live",
+  "version": "1.8.1-6",
+  "gparted_version": "1.8.1",
+  "architecture": "amd64",
+  "filename": "gparted-live-1.8.1-6-amd64.iso",
+  "sha256": "d789c38779f0d6f7026c12f44c2c52a04f66e28a1aea7d51f3045ad1bbf28411",
+  "kernel": "7.1.12-1",
+  "upstream_release_page": "https://sourceforge.net/projects/gparted/files/gparted-live-stable/1.8.1-6/",
+  "upstream_news": "https://gparted.org/news.php",
+  "project_home": "https://gparted.org/",
+  "license_note": "GParted is GPL-2.0-or-later. GParted Live contains many separately licensed components; redistribution must preserve all applicable notices/source obligations.",
+  "fx_policy": "Pinned third-party input. FX11 Builder must verify the exact SHA-256 before importing this image into an FX11 installation-media build. Do not silently substitute another release."
+}
