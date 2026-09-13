@@ -71,13 +71,34 @@ wimlib-imagex extract "$ROOT/output-boot.wim" 2 \
   /FX11/fx11-install.cmd \
   --dest-dir="$ROOT/boot-check" --no-acls >/dev/null
 
-grep -qi "wpeinit" "$ROOT/boot-check/Windows/System32/startnet.cmd"
-grep -q "FX11\\fx11-launch.cmd" "$ROOT/boot-check/Windows/System32/startnet.cmd"
-grep -qi "startnet.cmd" "$ROOT/boot-check/Windows/System32/winpeshl.ini"
-grep -q "Start FX Partition Manager" "$ROOT/boot-check/FX11/fx11-launch.cmd"
-grep -q "Continue directly to FX11 installation" "$ROOT/boot-check/FX11/fx11-partition.cmd"
-grep -qi "dism /Apply-Image" "$ROOT/boot-check/FX11/fx11-install.cmd"
-grep -qi "bcdboot W:\\Windows /s S: /f UEFI" "$ROOT/boot-check/FX11/fx11-install.cmd"
+# WIM paths are Windows-case-insensitive, while Debian's filesystem is not.
+# Resolve extracted names case-insensitively so this validates the payload,
+# not wimlib's preserved filename casing on the Linux host.
+find_one() {
+  local name="$1"
+  local found
+  found="$(find "$ROOT/boot-check" -type f -iname "$name" -print -quit)"
+  if [ -z "$found" ]; then
+    echo "Missing extracted WinPE payload file: $name" >&2
+    find "$ROOT/boot-check" -type f -print >&2 || true
+    exit 2
+  fi
+  printf '%s\n' "$found"
+}
+
+STARTNET_FILE="$(find_one startnet.cmd)"
+WINPESHL_FILE="$(find_one winpeshl.ini)"
+LAUNCHER_FILE="$(find_one fx11-launch.cmd)"
+PARTITION_FILE="$(find_one fx11-partition.cmd)"
+INSTALL_FILE="$(find_one fx11-install.cmd)"
+
+grep -qi "wpeinit" "$STARTNET_FILE"
+grep -q "FX11\\\\fx11-launch.cmd" "$STARTNET_FILE"
+grep -qi "startnet.cmd" "$WINPESHL_FILE"
+grep -q "Start FX Partition Manager" "$LAUNCHER_FILE"
+grep -q "Continue directly to FX11 installation" "$PARTITION_FILE"
+grep -qi "dism /Apply-Image" "$INSTALL_FILE"
+grep -qi "bcdboot W:\\Windows /s S: /f UEFI" "$INSTALL_FILE"
 
 xorriso -indev "$ROOT/output.iso" -ls '/sources/$OEM$/$$/Setup/Scripts/SetupComplete.cmd' >/dev/null 2>&1
 xorriso -indev "$ROOT/output.iso" -ls '/sources/$OEM$/$$/Setup/Scripts/FX11.ps1' >/dev/null 2>&1
