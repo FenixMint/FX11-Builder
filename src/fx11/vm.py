@@ -27,19 +27,24 @@ def find_ovmf() -> Path | None:
 def qemu_command(iso: Path, disk: Path, *, memory_mb: int = 4096, cpus: int = 2, uefi: bool = True) -> list[str]:
     if shutil.which("qemu-system-x86_64") is None:
         raise BuilderError("qemu-system-x86_64 is not installed.")
+
+    # Baseline VM hardware intentionally uses devices with inbox Windows/WinPE
+    # support.  Requiring virtio storage/network drivers here would make the
+    # installer test depend on a second driver ISO and could hide FX11 issues
+    # behind a missing third-party driver.
     command = [
         "qemu-system-x86_64",
-        "-name", "OS11vLIN-test",
+        "-name", "FX11-test",
         "-m", str(memory_mb),
         "-smp", str(cpus),
         "-machine", "q35",
         "-cpu", "host" if Path("/dev/kvm").exists() else "max",
         "-cdrom", str(iso),
-        "-drive", f"file={disk},format=raw,if=virtio",
+        "-drive", f"file={disk},format=raw,if=ide",
         "-boot", "order=d,menu=on",
-        "-device", "virtio-net-pci,netdev=n0",
+        "-device", "e1000,netdev=n0",
         "-netdev", "user,id=n0",
-        "-device", "virtio-vga",
+        "-vga", "std",
     ]
     if Path("/dev/kvm").exists() and os.access("/dev/kvm", os.R_OK | os.W_OK):
         command += ["-enable-kvm"]
@@ -55,7 +60,7 @@ def launch_qemu(iso: Path, *, memory_mb: int = 4096, cpus: int = 2, disk_gb: int
     iso = iso.expanduser().resolve()
     if not iso.is_file():
         raise BuilderError(f"ISO not found: {iso}")
-    with tempfile.TemporaryDirectory(prefix="os11vlin-qemu-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="fx11-qemu-") as temporary:
         disk = Path(temporary) / "windows-test.raw"
         with disk.open("wb") as handle:
             handle.truncate(disk_gb * 1024 * 1024 * 1024)
