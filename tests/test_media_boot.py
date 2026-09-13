@@ -7,6 +7,7 @@ from fx11.media_boot import (
     MEDIA_THEME_ESP_DIR,
     build_media_grub_config,
 )
+from fx11.media_efi import MEDIA_WINPE_READY_PATH
 from fx11.media_theme import (
     MEDIA_THEME_BACKGROUND_ISO_PATH,
     MEDIA_THEME_CONFIG_ISO_PATH,
@@ -44,6 +45,7 @@ def test_media_boot_prefers_efi_theme_and_keeps_iso_fallback():
 
     assert "insmod gfxterm" in text
     assert "insmod gfxterm_background" in text
+    assert "insmod gfxmenu" in text
     assert "insmod png" in text
     assert "set gfxmode=auto" in text
     assert "set gfxpayload=keep" in text
@@ -58,15 +60,16 @@ def test_media_boot_prefers_efi_theme_and_keeps_iso_fallback():
     assert "set theme=" in text
 
 
-def test_media_boot_uses_preserved_microsoft_loader_for_winpe():
+def test_media_boot_uses_fat_resident_winpe_loader():
     text = build_media_grub_config().grub_config
 
     assert "menuentry 'FX11 Installer'" in text
     assert "WinPE fallback" not in text
-    assert "/efi/microsoft/boot/bootmgfw.efi" in text
+    assert MEDIA_WINPE_READY_PATH in text
+    assert "/EFI/Microsoft/Boot/bootmgfw.efi" in text
     assert "/bootmgr.efi" not in text
-    assert "chainloader" in text
-    assert "chainloader ($winmedia)/efi/boot/bootx64.efi" not in text
+    assert "chainloader ($winboot)/EFI/Microsoft/Boot/bootmgfw.efi" in text
+    assert "chainloader ($winmedia)" not in text
 
 
 def test_media_boot_supports_continue_marker():
