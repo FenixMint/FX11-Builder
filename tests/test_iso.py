@@ -1,6 +1,10 @@
+from pathlib import Path
+from types import SimpleNamespace
+
 import pytest
 
-from fx11.iso import BuilderError, Edition, find_edition
+from fx11 import iso as iso_module
+from fx11.iso import BuilderError, Edition, detect_media_format, find_edition
 
 
 EDITIONS = (
@@ -31,3 +35,27 @@ def test_ambiguous_partial_name_is_rejected():
 def test_unknown_index_is_rejected():
     with pytest.raises(BuilderError, match="does not exist"):
         find_edition(EDITIONS, index=99)
+
+
+def test_detect_media_format_recognizes_udf(monkeypatch, tmp_path: Path):
+    source = tmp_path / "windows.iso"
+    source.write_bytes(b"iso")
+    monkeypatch.setattr(iso_module, "_sevenzip", lambda: "/usr/bin/7z")
+    monkeypatch.setattr(
+        iso_module.subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(returncode=0, stdout=b"Path = windows.iso\nType = Udf\n", stderr=b""),
+    )
+    assert detect_media_format(source) == "udf"
+
+
+def test_detect_media_format_defaults_non_udf_to_iso9660(monkeypatch, tmp_path: Path):
+    source = tmp_path / "windows.iso"
+    source.write_bytes(b"iso")
+    monkeypatch.setattr(iso_module, "_sevenzip", lambda: "/usr/bin/7z")
+    monkeypatch.setattr(
+        iso_module.subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(returncode=0, stdout=b"Path = windows.iso\nType = Iso\n", stderr=b""),
+    )
+    assert detect_media_format(source) == "iso9660"
