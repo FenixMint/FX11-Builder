@@ -41,9 +41,8 @@ The first-run experience:
 6. explains why each offered application may be useful,
 7. offers privacy and Proton tools,
 8. offers optional WSL2 setup with Linux distribution selection,
-9. explains the optional dual-boot path for users who want a full Linux installation beside Windows,
-10. downloads the current vendor release at install time instead of shipping stale installers inside the ISO,
-11. allows the user to skip optional third-party software.
+9. downloads the current vendor release at install time instead of shipping stale installers inside the ISO,
+10. allows the user to skip optional third-party software.
 
 No optional third-party application is installed silently without user consent.
 
@@ -136,19 +135,24 @@ WSL2 is optional and must not be enabled silently.
 
 ### Dual boot: Windows + Linux
 
-FX11 should also present **dual boot** as an optional advanced path for users who want a complete Linux desktop alongside Windows.
+Dual boot is a **pre-installation decision**, not a First Run option.
 
-- First Run should not repartition disks or install Linux automatically.
-- FX11 should provide a clear guide explaining the difference between WSL2 and dual boot.
-- The guide should cover preparation, backups, disk-space planning, UEFI/GPT basics, BitLocker/device-encryption considerations, Secure Boot considerations, installation order and boot-manager recovery at a high level.
-- FX11 should recommend creating a full backup before resizing partitions or installing another operating system.
-- The guide may recommend suitable Linux distributions by user profile, but the final choice remains entirely with the user.
-- A future FX11 tool may assist with readiness checks, but destructive partitioning must never occur without explicit, separate confirmation.
+- FX11 First Run must not offer to create a dual-boot layout, because at that point Windows is already installed and the disk layout has already been created.
+- FX11 Builder / installer preparation should be able to offer a **Dual boot planning mode** before Windows installation.
+- This mode should explain the difference between a standard FX11 install and reserving disk space for a future Linux installation.
+- The preferred safe behavior is to guide the user to leave **unallocated space** for Linux rather than automatically creating Linux partitions from the Windows installer.
+- FX11 should never silently shrink an existing Windows partition or perform destructive partition operations.
+- Any future assisted-resize feature must require a separate explicit confirmation, show the proposed disk layout and strongly recommend a backup first.
+- The pre-installation guide should cover disk-space planning, UEFI/GPT basics, BitLocker/device-encryption considerations, Secure Boot considerations, installation order and boot-manager recovery at a high level.
+- The recommended flow is: plan dual boot before installation -> install FX11 into its intended Windows partition -> install the chosen Linux distribution into the reserved/unallocated space afterward.
+- FX11 may recommend suitable Linux distributions by user profile, but the final choice remains entirely with the user.
 
-Suggested user-facing choice:
+Suggested pre-installation choice:
 
-- **WSL2 — Linux inside Windows**: best for Linux command-line tools, development and occasional Linux workflows without leaving Windows.
-- **Dual boot — full Linux + Windows**: best for users who want a complete native Linux desktop, direct hardware access and the option to choose an operating system at startup.
+- **FX11 only** — use the disk normally for Windows.
+- **FX11 + Linux later** — reserve unallocated disk space for Linux and show a post-installation guide for completing the Linux installation.
+
+A post-installation FX11 Control Center page may still contain the dual-boot guide and readiness information, but it must be educational only by default; it is not the primary point where disk partitioning is decided.
 
 ## Application installation policy
 
@@ -197,6 +201,7 @@ Responsibilities:
 - inject FX11 assets and provisioning,
 - stage First Run and Control Center,
 - apply machine-wide privacy baseline safely,
+- offer pre-installation dual-boot planning guidance,
 - build and validate bootable ISO.
 
 ### FX11 First Run
@@ -210,7 +215,6 @@ Responsibilities:
 - privacy explanation,
 - verification/installation of mandatory compatibility runtimes,
 - optional WSL2 setup and distribution selection,
-- dual-boot education and guidance,
 - creation of the user's chosen FX11 desktop setup.
 
 ### FX11 Control Center
@@ -222,6 +226,7 @@ Planned sections:
 - Applications,
 - Privacy,
 - Linux / WSL2,
+- Dual Boot Guide,
 - Windows,
 - Updates,
 - FX11 Status.
