@@ -86,19 +86,34 @@ find_one() {
   printf '%s\n' "$found"
 }
 
+assert_contains_ci() {
+  local file="$1"
+  local literal="$2"
+  local label="$3"
+  if ! grep -Fqi -- "$literal" "$file"; then
+    echo "WinPE payload assertion failed: $label" >&2
+    echo "Expected literal: $literal" >&2
+    echo "File: $file" >&2
+    echo "----- file contents -----" >&2
+    cat "$file" >&2 || true
+    echo "-------------------------" >&2
+    exit 3
+  fi
+}
+
 STARTNET_FILE="$(find_one startnet.cmd)"
 WINPESHL_FILE="$(find_one winpeshl.ini)"
 LAUNCHER_FILE="$(find_one fx11-launch.cmd)"
 PARTITION_FILE="$(find_one fx11-partition.cmd)"
 INSTALL_FILE="$(find_one fx11-install.cmd)"
 
-grep -qi "wpeinit" "$STARTNET_FILE"
-grep -q "FX11\\\\fx11-launch.cmd" "$STARTNET_FILE"
-grep -qi "startnet.cmd" "$WINPESHL_FILE"
-grep -q "Start FX Partition Manager" "$LAUNCHER_FILE"
-grep -q "Continue directly to FX11 installation" "$PARTITION_FILE"
-grep -qi "dism /Apply-Image" "$INSTALL_FILE"
-grep -qi "bcdboot W:\\Windows /s S: /f UEFI" "$INSTALL_FILE"
+assert_contains_ci "$STARTNET_FILE" 'wpeinit' 'startnet initializes WinPE'
+assert_contains_ci "$STARTNET_FILE" 'FX11\fx11-launch.cmd' 'startnet hands off to FX11 launcher'
+assert_contains_ci "$WINPESHL_FILE" 'startnet.cmd' 'winpeshl starts startnet'
+assert_contains_ci "$LAUNCHER_FILE" 'Start FX Partition Manager' 'launcher exposes FX Partition Manager'
+assert_contains_ci "$PARTITION_FILE" 'Continue directly to FX11 installation' 'partition manager can hand off to installer'
+assert_contains_ci "$INSTALL_FILE" 'dism /Apply-Image' 'installer applies the Windows image'
+assert_contains_ci "$INSTALL_FILE" 'bcdboot W:\Windows /s S: /f UEFI' 'installer writes Windows UEFI boot files'
 
 xorriso -indev "$ROOT/output.iso" -ls '/sources/$OEM$/$$/Setup/Scripts/SetupComplete.cmd' >/dev/null 2>&1
 xorriso -indev "$ROOT/output.iso" -ls '/sources/$OEM$/$$/Setup/Scripts/FX11.ps1' >/dev/null 2>&1
