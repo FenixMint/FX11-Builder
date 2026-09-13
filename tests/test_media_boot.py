@@ -2,8 +2,16 @@ import pytest
 
 from fx11.gparted import GPARTED_LIVE
 from fx11.iso import BuilderError
-from fx11.media_boot import build_media_grub_config
-from fx11.media_theme import MEDIA_THEME_CONFIG_ISO_PATH, MEDIA_THEME_FONT_ISO_PATH
+from fx11.media_boot import (
+    MEDIA_CONTINUE_MARKER_PATH,
+    MEDIA_THEME_ESP_DIR,
+    build_media_grub_config,
+)
+from fx11.media_theme import (
+    MEDIA_THEME_BACKGROUND_ISO_PATH,
+    MEDIA_THEME_CONFIG_ISO_PATH,
+    MEDIA_THEME_FONT_ISO_PATH,
+)
 
 
 def test_media_boot_defaults_to_gparted_partition_manager():
@@ -23,27 +31,42 @@ def test_media_boot_defaults_to_gparted_partition_manager():
     assert "keyboard-layouts=pl" in text
 
 
-def test_media_boot_loads_graphical_fx11_theme_with_text_fallback():
+def test_media_boot_prefers_efi_theme_and_keeps_iso_fallback():
     text = build_media_grub_config().grub_config
 
     assert "insmod gfxterm" in text
+    assert "insmod gfxterm_background" in text
     assert "insmod png" in text
     assert "set gfxmode=auto" in text
     assert "set gfxpayload=keep" in text
+    assert f"{MEDIA_THEME_ESP_DIR}/unicode.pf2" in text
+    assert f"{MEDIA_THEME_ESP_DIR}/theme.txt" in text
+    assert f"{MEDIA_THEME_ESP_DIR}/background.png" in text
     assert MEDIA_THEME_FONT_ISO_PATH in text
     assert MEDIA_THEME_CONFIG_ISO_PATH in text
+    assert MEDIA_THEME_BACKGROUND_ISO_PATH in text
     assert "terminal_output gfxterm" in text
+    assert "background_image" in text
     assert "set theme=" in text
 
 
-def test_media_boot_keeps_winpe_entry_without_looping_to_fx_grub():
+def test_media_boot_uses_preserved_microsoft_loader_for_winpe():
     text = build_media_grub_config().grub_config
 
     assert "menuentry 'FX11 Installer'" in text
     assert "WinPE fallback" not in text
-    assert "/bootmgr.efi" in text
+    assert "/efi/microsoft/boot/bootmgfw.efi" in text
+    assert "/bootmgr.efi" not in text
     assert "chainloader" in text
     assert "chainloader ($winmedia)/efi/boot/bootx64.efi" not in text
+
+
+def test_media_boot_supports_future_continue_marker():
+    text = build_media_grub_config().grub_config
+
+    assert MEDIA_CONTINUE_MARKER_PATH in text
+    assert "set default='fx11-winpe'" in text
+    assert "set timeout=1" in text
 
 
 def test_media_boot_rejects_negative_timeout():
