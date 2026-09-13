@@ -25,6 +25,10 @@ def test_media_grub_module_list_uses_search_fs_file():
     assert "search_file" not in MEDIA_GRUB_MODULES
 
 
+def test_media_grub_module_list_includes_graphical_menu():
+    assert "gfxmenu" in MEDIA_GRUB_MODULES
+
+
 def test_parse_file_backed_efi_path_from_xorriso_report():
     report = "-boot_image any efi_path='/efi/microsoft/boot/efisys.bin'\n"
     assert parse_efi_el_torito_path(report) == "/efi/microsoft/boot/efisys.bin"
