@@ -136,14 +136,19 @@ def command_audit(args: argparse.Namespace) -> int:
     if report_path is None:
         report_path = args.fx11_iso.with_name(args.fx11_iso.name + ".delta.json")
     report = write_delta_report(args.source_iso, args.fx11_iso, report_path)
-    delta = report["delta"]
-    print("FX11 ISO DELTA AUDIT")
-    print(f"Source          : {report['source']['path']}")
-    print(f"FX11 ISO        : {report['output']['path']}")
-    print(f"Added paths     : {len(delta['added'])}")
-    print(f"Removed paths   : {len(delta['removed'])}")
-    print(f"Unexpected added: {len(delta['unexpected_added'])}")
-    print(f"Report          : {report_path.expanduser().resolve()}")
+    iso_delta = report["iso_delta"]
+    wim_delta = report["install_image_delta"]
+    print("FX11 DEEP ISO AUDIT")
+    print(f"Source             : {report['source']['path']}")
+    print(f"FX11 ISO           : {report['output']['path']}")
+    print(f"ISO paths added    : {len(iso_delta['added'])}")
+    print(f"ISO paths removed  : {len(iso_delta['removed'])}")
+    print(f"Unexpected added   : {len(iso_delta['unexpected_added'])}")
+    print(f"WIM paths added    : {len(wim_delta['added'])}")
+    print(f"WIM paths removed  : {len(wim_delta['removed'])}")
+    print(f"WIM inventory same : {'YES' if wim_delta['content_inventory_identical'] else 'NO'}")
+    print(f"Report             : {report_path.expanduser().resolve()}")
+    print("Runtime VM audit is still required for registry/services/tasks/accounts/network state.")
     return 0
 
 
@@ -184,7 +189,7 @@ def build_parser() -> argparse.ArgumentParser:
     validate = sub.add_parser("validate", help="Validate a generated FX11 ISO")
     validate.add_argument("iso", type=Path)
 
-    audit = sub.add_parser("audit", help="Compare an FX11 ISO against its source ISO and write a delta report")
+    audit = sub.add_parser("audit", help="Deep-compare an FX11 ISO against its source ISO and write a JSON delta report")
     audit.add_argument("source_iso", type=Path, help="Original source Windows ISO")
     audit.add_argument("fx11_iso", type=Path, help="Generated FX11 ISO")
     audit.add_argument("-o", "--output", type=Path, help="Output JSON report path")
