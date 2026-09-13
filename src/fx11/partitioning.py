@@ -232,14 +232,17 @@ def custom_diskpart_script(plan: PartitionPlan, disk_number: int) -> str:
     if not validation.valid:
         raise BuilderError("Invalid custom partition plan: " + "; ".join(validation.errors))
 
+    if any(change.action == ChangeKind.RESIZE for change in plan.changes):
+        raise BuilderError(
+            "Resize requires the size-aware WinPE executor; refusing to emit an ambiguous DiskPart resize command."
+        )
+
     lines = [f"select disk {disk_number}"]
     for change in plan.changes:
         if change.action == ChangeKind.PRESERVE:
             continue
         if change.action == ChangeKind.DELETE:
             lines.extend([f"select partition {change.partition_number}", "delete partition override"])
-        elif change.action == ChangeKind.RESIZE:
-            lines.extend([f"select partition {change.partition_number}", f"shrink desired={change.size_mib}"])
         elif change.action == ChangeKind.FORMAT:
             label = f' label="{change.label}"' if change.label else ""
             lines.extend(
