@@ -1,8 +1,12 @@
+import shutil
+import subprocess
+
 import pytest
 
 from fx11.iso import BuilderError
 from fx11.media_efi import (
     MEDIA_GRUB_CONFIG_PATH,
+    build_media_efi_payload,
     embedded_media_config,
     parse_efi_el_torito_path,
 )
@@ -33,3 +37,24 @@ def test_reject_interval_backed_efi_path_for_now():
 def test_reject_missing_efi_path():
     with pytest.raises(BuilderError, match="Unable to discover"):
         parse_efi_el_torito_path("-boot_image any bin_path=/boot/etfsboot.com\n")
+
+
+@pytest.mark.skipif(
+    not all(shutil.which(tool) for tool in ("grub-mkstandalone", "mformat", "mmd", "mcopy")),
+    reason="GRUB/mtools not installed on this test host",
+)
+def test_build_media_efi_payload_contains_bootx64(tmp_path):
+    payload = build_media_efi_payload(tmp_path / "media-efi")
+
+    assert payload.image.is_file()
+    assert payload.image.stat().st_size == 16 * 1024 * 1024
+    assert payload.efi_binary.is_file()
+    assert len(payload.sha256) == 64
+
+    proc = subprocess.run(
+        ["mdir", "-i", str(payload.image), "::/EFI/BOOT/BOOTX64.EFI"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr.decode("utf-8", errors="replace")
