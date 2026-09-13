@@ -8,8 +8,8 @@ Usage:
 
 Rebuilds an already-generated FX11 ISO with a GPT EFI System Partition view of
 the current FX11 UEFI media image. During repack it refreshes the staged FX11
-GRUB configuration, graphical theme and BOOTX64.EFI so boot changes can be
-tested without rebuilding install.wim or boot.wim.
+GRUB configuration, graphical theme and BOOTX64.EFI, and adds the FX11 handoff
+to the nested GParted Live environment. Windows WIM files are not rebuilt.
 EOF
 }
 
@@ -50,6 +50,12 @@ if [[ -z "$PYTHON" ]]; then
   exit 1
 fi
 
+HANDOFF_SOURCE="$REPO_ROOT/assets/gparted/90-fx11-continue"
+if [[ ! -f "$HANDOFF_SOURCE" ]]; then
+  echo "ERROR: GParted handoff hook is missing: $HANDOFF_SOURCE" >&2
+  exit 1
+fi
+
 mkdir -p "$(dirname "$OUTPUT")"
 TMP=$(mktemp -d -t fx11-usb-hybrid-XXXXXX)
 trap 'rm -rf "$TMP"' EXIT
@@ -71,6 +77,7 @@ REMOVABLE_EFI="$TREE/efi/boot/bootx64.efi"
 MEDIA_GRUB="$TREE/FX11/media/grub.cfg"
 MEDIA_EFI_STAGED="$TREE/FX11/media/efiboot.img"
 MEDIA_THEME_DIR="$TREE/FX11/media/theme"
+GPARTED_DIR="$TREE/FX11/gparted"
 
 if [[ ! -f "$BIOS" ]]; then
   echo "ERROR: missing BIOS El Torito image after extraction: $BIOS" >&2
@@ -89,8 +96,37 @@ if [[ ! -f "$MEDIA_GRUB" ]]; then
   exit 1
 fi
 
+GPARTED_INNER=$(find "$GPARTED_DIR" -maxdepth 1 -type f -name 'gparted-live-*.iso' -print -quit 2>/dev/null || true)
+if [[ -z "$GPARTED_INNER" ]]; then
+  echo "ERROR: staged GParted Live ISO not found in $GPARTED_DIR" >&2
+  exit 1
+fi
+
 echo
-echo "=== 2. Refreshing FX11 media menu, theme and EFI image ==="
+echo "=== 2. Adding Continue to FX11 Installer to GParted Live ==="
+HANDOFF_STAGE="$TMP/90-fx11-continue"
+cp "$HANDOFF_SOURCE" "$HANDOFF_STAGE"
+chmod 0755 "$HANDOFF_STAGE"
+GPARTED_CUSTOM="$TMP/gparted-fx11.iso"
+xorriso \
+  -indev "$GPARTED_INNER" \
+  -outdev "$GPARTED_CUSTOM" \
+  -overwrite on \
+  -map "$HANDOFF_STAGE" /live/config-hooks/90-fx11-continue \
+  -boot_image any replay \
+  -commit \
+  -end
+mv "$GPARTED_CUSTOM" "$GPARTED_INNER"
+
+HOOK_REPORT="$TMP/gparted-hook.txt"
+xorriso -indev "$GPARTED_INNER" -lsdl /live/config-hooks/90-fx11-continue 2>&1 | tee "$HOOK_REPORT"
+if ! grep -q "90-fx11-continue" "$HOOK_REPORT"; then
+  echo "ERROR: FX11 handoff hook was not staged in GParted Live." >&2
+  exit 1
+fi
+
+echo
+echo "=== 3. Refreshing FX11 media menu, theme and EFI image ==="
 PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}" \
   "$PYTHON" - "$MEDIA_GRUB" "$MEDIA_THEME_DIR" "$TMP/media-efi" "$UEFI" "$REMOVABLE_EFI" "$MEDIA_EFI_STAGED" <<'PY'
 from pathlib import Path
@@ -139,8 +175,6 @@ for required in "$THEME_CONFIG" "$THEME_BACKGROUND" "$THEME_LOGO" "$THEME_FONT" 
   fi
 done
 
-# The same theme is embedded in the EFI FAT partition so GRUB does not depend
-# on ISO-relative theme loading on real firmware.
 for efi_asset in \
   ::/EFI/BOOT/BOOTX64.EFI \
   ::/EFI/FX11/theme/theme.txt \
@@ -154,7 +188,7 @@ for efi_asset in \
 done
 
 echo
-echo "=== 3. Rebuilding with GPT EFI System Partition metadata ==="
+echo "=== 4. Rebuilding with GPT EFI System Partition metadata ==="
 xorriso \
   -as mkisofs \
   -iso-level 3 \
@@ -173,7 +207,7 @@ xorriso \
   "$TREE"
 
 echo
-echo "=== 4. Verifying System Area ==="
+echo "=== 5. Verifying System Area ==="
 SYSTEM_REPORT="$TMP/system-area.txt"
 xorriso -indev "$OUTPUT" -report_system_area plain 2>&1 | tee "$SYSTEM_REPORT"
 
@@ -188,13 +222,17 @@ if ! grep -Eqi "EFI|ESP|System Partition" "$SYSTEM_REPORT"; then
 fi
 
 echo
-echo "=== 5. Verifying El Torito ==="
+echo "=== 6. Verifying El Torito ==="
 xorriso -indev "$OUTPUT" -report_el_torito plain
 
 echo
-echo "=== 6. Verifying refreshed FX boot menu and theme ==="
+echo "=== 7. Verifying refreshed FX boot menu and theme ==="
 if ! grep -q "gl_batch" "$MEDIA_GRUB"; then
   echo "ERROR: refreshed media GRUB config does not enable GParted batch graphics mode." >&2
+  exit 1
+fi
+if ! grep -q "hooks=medium" "$MEDIA_GRUB"; then
+  echo "ERROR: refreshed media GRUB config does not enable the GParted handoff hook." >&2
   exit 1
 fi
 if ! grep -q "chainloader .*bootmgfw.efi" "$MEDIA_GRUB"; then
@@ -219,7 +257,7 @@ if ! grep -q 'text = "Fenix"' "$THEME_CONFIG"; then
 fi
 
 echo
-echo "=== 7. SHA-256 ==="
+echo "=== 8. SHA-256 ==="
 sha256sum "$OUTPUT" | tee "$OUTPUT.sha256"
 
 echo
