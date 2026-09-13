@@ -11,8 +11,9 @@ import tempfile
 
 from . import __version__
 from .bootmanager import build_unsigned_payload
-from .gparted import GPARTED_LIVE, VerifiedGPartedLive, verify_gparted_live
+from .gparted import VerifiedGPartedLive, verify_gparted_live
 from .iso import BuilderError, Edition, IsoInspection, inspect_iso, run_checked, sha256_file
+from .media_boot import build_media_grub_config
 from .profiles import get_profile, validate_profile
 from .provisioning import write_provisioning_files
 from .winpe import CustomizedBootWim, customize_boot_wim
@@ -90,6 +91,7 @@ def _manifest(
     boot_hashes: dict[str, str],
     winpe: CustomizedBootWim,
     gparted: VerifiedGPartedLive | None,
+    media_grub_sha256: str | None,
 ) -> dict[str, object]:
     manifest: dict[str, object] = {
         "project": "FX11 Builder",
@@ -141,7 +143,8 @@ def _manifest(
             "mainline_direction": "FX-branded graphical environment powered by GParted",
             "text_fallback_retained": True,
             "gparted_payload_staged": gparted is not None,
-            "gparted_boot_selector_status": "pending top-level FX media GRUB integration",
+            "gparted_media_grub_staged": media_grub_sha256 is not None,
+            "gparted_boot_selector_status": "media GRUB config staged; UEFI El Torito handoff to FX GRUB still pending",
         },
         "boot_manager": {
             "name": "FX Boot Manager",
@@ -186,6 +189,13 @@ def _manifest(
                 "branding_policy": "FX Partition Manager — powered by GParted; upstream identity and license obligations are retained.",
             }
         }
+        if media_grub_sha256 is not None:
+            injected = manifest.get("injected_files")
+            if isinstance(injected, dict):
+                injected["/FX11/media/grub.cfg"] = {
+                    "sha256": media_grub_sha256,
+                    "purpose": "Top-level FX installation-media GRUB menu for GParted mainline and WinPE fallback",
+                }
 
     return manifest
 
@@ -260,6 +270,15 @@ def build_iso(
             "grub.cfg": sha256_file(boot_payload.grub_config),
             "theme.txt": sha256_file(boot_payload.theme_config),
         }
+
+        media_grub: Path | None = None
+        media_grub_sha256: str | None = None
+        if verified_gparted is not None:
+            media_boot = build_media_grub_config()
+            media_grub = root / "media-grub.cfg"
+            media_grub.write_text(media_boot.grub_config, encoding="utf-8")
+            media_grub_sha256 = sha256_file(media_grub)
+
         manifest_data = _manifest(
             inspection,
             edition,
@@ -268,6 +287,7 @@ def build_iso(
             boot_hashes,
             customized_boot,
             verified_gparted,
+            media_grub_sha256,
         )
         manifest = root / "FX11-manifest.json"
         manifest.write_text(json.dumps(manifest_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -285,8 +305,13 @@ def build_iso(
             (boot_payload.grub_config, "/FX11/boot/EFI/FX11/grub.cfg"),
             (boot_payload.theme_config, "/FX11/boot/EFI/FX11/theme/theme.txt"),
         ]
+        required_extra_list: list[str] = []
         if verified_gparted is not None and gparted_iso_path is not None:
             maps.append((verified_gparted.path, gparted_iso_path))
+            required_extra_list.append(gparted_iso_path)
+        if media_grub is not None:
+            maps.append((media_grub, "/FX11/media/grub.cfg"))
+            required_extra_list.append("/FX11/media/grub.cfg")
 
         command = [
             "xorriso",
@@ -300,10 +325,9 @@ def build_iso(
             command += ["-map", str(local), target]
         command += ["-boot_image", "any", "replay", "-commit", "-end"]
 
-        required_extra = (gparted_iso_path,) if gparted_iso_path is not None else tuple()
         try:
             run_checked(command)
-            validate_output_iso(partial, extra_required=required_extra)
+            validate_output_iso(partial, extra_required=tuple(required_extra_list))
             if sha256_file(inspection.source) != inspection.source_sha256:
                 raise BuilderError("Source ISO was unexpectedly modified during the build.")
             if output_iso.exists():
