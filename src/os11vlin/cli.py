@@ -1,10 +1,19 @@
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
+import re
+import sys
 
 from . import __version__
+from .builder import build_iso, inspect_source, validate_output_iso
 from .doctor import host_report
+from .iso import BuilderError, Edition, find_edition
 from .profiles import PROFILES, get_profile, validate_profile
+from .vm import launch_qemu
+
+
+DEFAULT_PROFILES = ["tiny11-safe", "privacy-balanced"]
 
 
 def command_doctor() -> int:
@@ -29,7 +38,7 @@ def command_profiles() -> int:
 
 def command_plan(profile_ids: list[str]) -> int:
     if not profile_ids:
-        profile_ids = ["tiny11-safe", "privacy-balanced"]
+        profile_ids = DEFAULT_PROFILES.copy()
     print("OS11vLIN BUILD PLAN\n")
     for profile_id in profile_ids:
         profile = get_profile(profile_id)
@@ -43,26 +52,154 @@ def command_plan(profile_ids: list[str]) -> int:
     return 0
 
 
+def _print_editions(editions: tuple[Edition, ...]) -> None:
+    print("\nAvailable Windows images:")
+    for edition in editions:
+        extra = f" [{edition.edition_id}]" if edition.edition_id else ""
+        arch = f" arch={edition.architecture}" if edition.architecture else ""
+        print(f"  {edition.index:>2}. {edition.name}{extra}{arch}")
+
+
+def command_inspect(source: Path) -> int:
+    inspection, temp = inspect_source(source)
+    try:
+        print(f"Source : {inspection.source}")
+        print(f"SHA256 : {inspection.source_sha256}")
+        print(f"Image  : {inspection.install_format.upper()}")
+        _print_editions(inspection.editions)
+        return 0
+    finally:
+        temp.cleanup()
+
+
+def _choose_edition(editions: tuple[Edition, ...], index: int | None, query: str | None) -> Edition:
+    if index is not None or query:
+        return find_edition(editions, index=index, query=query)
+    if not sys.stdin.isatty():
+        raise BuilderError("No edition selected. Use --index N or --edition NAME in non-interactive mode.")
+    _print_editions(editions)
+    while True:
+        try:
+            value = input("\nSelect Windows image index > ").strip()
+        except EOFError as exc:
+            raise BuilderError("No edition selected.") from exc
+        if value.isdigit():
+            try:
+                return find_edition(editions, index=int(value))
+            except BuilderError as exc:
+                print(exc)
+                continue
+        print("Enter one of the numeric image indexes shown above.")
+
+
+def _slug(value: str) -> str:
+    slug = re.sub(r"[^A-Za-z0-9]+", "-", value).strip("-")
+    return slug or "Windows11"
+
+
+def command_build(args: argparse.Namespace) -> int:
+    profiles = args.profiles or DEFAULT_PROFILES.copy()
+    inspection, temp = inspect_source(args.source)
+    try:
+        edition = _choose_edition(inspection.editions, args.index, args.edition)
+        print(f"\nSelected: {edition.index}. {edition.name}")
+        print(f"Source SHA256: {inspection.source_sha256}")
+        command_plan(profiles)
+        if args.dry_run:
+            print("\nBuild not started because --dry-run was specified.")
+            return 0
+        output = args.output
+        if output is None:
+            output = Path.cwd() / f"{inspection.source.stem}-OS11vLIN-{_slug(edition.name)}.iso"
+        print(f"\nBuilding: {output}")
+        result = build_iso(inspection, edition, output, profiles, force=args.force)
+        print("\nBUILD VALID")
+        print(f"ISO    : {result.output_iso}")
+        print(f"SHA256 : {result.output_sha256}")
+        print(f"SUM    : {result.checksum_file}")
+        print(f"Edition: {result.edition.name}")
+        print(f"Profiles: {', '.join(result.profiles)}")
+        return 0
+    finally:
+        temp.cleanup()
+
+
+def command_validate(iso: Path) -> int:
+    validate_output_iso(iso.expanduser().resolve())
+    print(f"VALID: {iso}")
+    return 0
+
+
+def command_test(args: argparse.Namespace) -> int:
+    return launch_qemu(
+        args.iso,
+        memory_mb=args.memory,
+        cpus=args.cpus,
+        disk_gb=args.disk,
+        uefi=not args.bios,
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="os11vlin", description="Build conservative Windows 11 images on Linux")
+    parser = argparse.ArgumentParser(prog="os11vlin", description="Build conservative tiny11-style Windows 11 images on Linux")
     parser.add_argument("--version", action="version", version=__version__)
     sub = parser.add_subparsers(dest="command", required=True)
+
     sub.add_parser("doctor", help="Check host compatibility and external tools")
     sub.add_parser("profiles", help="List available build profiles")
+
     plan = sub.add_parser("plan", help="Preview profile actions without modifying an image")
-    plan.add_argument("--profile", action="append", default=[], dest="profiles")
+    plan.add_argument("--profile", action="append", default=[], dest="profiles", choices=sorted(PROFILES))
+
+    inspect = sub.add_parser("inspect", help="Inspect a Windows ISO and list all Home/Pro/Enterprise/etc. images")
+    inspect.add_argument("source", type=Path)
+
+    build = sub.add_parser("build", help="Build a selected Windows 11 edition")
+    build.add_argument("source", type=Path, help="Original Microsoft Windows 11 ISO")
+    select = build.add_mutually_exclusive_group()
+    select.add_argument("--index", type=int, help="WIM/ESD image index from 'os11vlin inspect'")
+    select.add_argument("--edition", help="Edition name or EditionID, e.g. 'Windows 11 Pro' or Professional")
+    build.add_argument("-o", "--output", type=Path)
+    build.add_argument("--profile", action="append", default=[], dest="profiles", choices=sorted(PROFILES))
+    build.add_argument("--dry-run", action="store_true")
+    build.add_argument("--force", action="store_true")
+
+    validate = sub.add_parser("validate", help="Validate a generated OS11vLIN ISO")
+    validate.add_argument("iso", type=Path)
+
+    test = sub.add_parser("test", help="Boot an ISO in a temporary QEMU VM")
+    test.add_argument("iso", type=Path)
+    test.add_argument("--memory", type=int, default=4096, help="VM memory in MiB")
+    test.add_argument("--cpus", type=int, default=2)
+    test.add_argument("--disk", type=int, default=64, help="Temporary disk size in GiB")
+    test.add_argument("--bios", action="store_true", help="Use legacy BIOS instead of OVMF/UEFI")
     return parser
 
 
 def main() -> int:
     args = build_parser().parse_args()
-    if args.command == "doctor":
-        return command_doctor()
-    if args.command == "profiles":
-        return command_profiles()
-    if args.command == "plan":
-        return command_plan(args.profiles)
-    return 1
+    try:
+        if args.command == "doctor":
+            return command_doctor()
+        if args.command == "profiles":
+            return command_profiles()
+        if args.command == "plan":
+            return command_plan(args.profiles)
+        if args.command == "inspect":
+            return command_inspect(args.source)
+        if args.command == "build":
+            return command_build(args)
+        if args.command == "validate":
+            return command_validate(args.iso)
+        if args.command == "test":
+            return command_test(args)
+        return 1
+    except (BuilderError, ValueError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+    except KeyboardInterrupt:
+        print("\nCancelled.", file=sys.stderr)
+        return 130
 
 
 if __name__ == "__main__":
