@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     container: debian:trixie
     steps:
-      - run: apt-get update && apt-get install -y git python3 python3-venv python3-pip wimtools xorriso grub-efi-amd64-bin
+      - run: apt-get update && apt-get install -y git python3 python3-venv python3-pip wimtools xorriso grub-efi-amd64-bin mtools
       - uses: actions/checkout@v4
       - run: python3 -m venv .venv
       - run: .venv/bin/pip install -e '.[dev]'
