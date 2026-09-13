@@ -1,0 +1,385 @@
+FX11 BUILDER — INSTRUKCJA OBSŁUGI
+==================================
+
+Status dokumentu: wersja rozwojowa
+Projekt: FX11 Builder
+Repozytorium: FenixMint/FX11-Builder
+
+FX11 Builder buduje zmodyfikowany obraz instalacyjny Windows 11 na Linuksie.
+Użytkownik dostarcza własny, legalny obraz ISO Windows 11. Builder nie zawiera
+ani nie dystrybuuje obrazu Windows.
+
+FX11 powstał z potrzeby uzyskania podobnej wygody, jaką daje tiny11, ale z
+builderem działającym natywnie na Linuksie. Kod FX11 jest rozwijany niezależnie,
+a inspiracje i komponenty zewnętrzne są opisane w repozytorium.
+
+
+1. OBSŁUGIWANE HOSTY
+====================
+
+Aktualny stan walidacji:
+
+- Debian 13 / trixie — CI: testy, doctor i syntetyczny E2E przechodzą.
+- Linux Mint 22.3 — lokalnie: testy, doctor i syntetyczny E2E przechodzą.
+- LMDE — docelowo wspierany host rodziny Debian; pełna walidacja jeszcze trwa.
+
+W kolejnych etapach planowane są adaptery dla Ubuntu, Fedora, openSUSE i innych
+dystrybucji.
+
+
+2. INSTALACJA BUILDERA
+======================
+
+Najprostsza metoda na Debianie / LMDE / Linux Mint:
+
+  cd ~/Dokumenty
+  git clone https://github.com/FenixMint/FX11-Builder.git
+  cd FX11-Builder
+  chmod +x scripts/bootstrap-debian.sh
+  ./scripts/bootstrap-debian.sh
+
+Po instalacji aktywuj środowisko:
+
+  . .venv/bin/activate
+
+Sprawdź host:
+
+  fx11 doctor
+
+Oczekiwany wynik końcowy:
+
+  STATUS: READY
+
+Najważniejsze narzędzia używane przez Builder:
+
+- wimlib / wimlib-imagex
+- xorriso
+- 7-Zip (7z) — m.in. do odczytu współczesnych obrazów Microsoft UDF
+- grub-mkstandalone
+- mtools
+- QEMU
+- OVMF do testów UEFI
+
+
+3. AKTUALIZACJA BUILDERA
+========================
+
+  cd ~/Dokumenty/FX11-Builder
+  git pull --ff-only origin main
+  . .venv/bin/activate
+
+Po większej aktualizacji warto uruchomić:
+
+  pytest
+  fx11 doctor
+
+
+4. PRZYGOTOWANIE PLIKÓW
+=======================
+
+Potrzebne są:
+
+A) oryginalny obraz ISO Windows 11,
+B) przypięty obraz GParted Live, jeśli używana jest główna graficzna ścieżka
+   FX Partition Manager.
+
+Przykład:
+
+  WINISO="$HOME/Pobrane/Win11_25H2_Polish_x64_v2.iso"
+  GPARTED="$HOME/Pobrane/FX11/gparted-live-1.8.1-6-amd64.iso"
+  OUT="$HOME/Pobrane/FX11/FX11-25H2-PL-x64-Home.iso"
+
+UWAGA:
+Nie zakładaj numeru indeksu edycji Windows na podstawie innego ISO. Najpierw
+zawsze uruchom "fx11 inspect".
+
+
+5. SPRAWDZENIE OBRAZU WINDOWS
+=============================
+
+  fx11 inspect "$WINISO"
+
+Builder pokaże:
+
+- SHA-256 źródłowego ISO,
+- format install.wim / install.esd,
+- listę dostępnych edycji,
+- indeksy obrazów.
+
+Przykład:
+
+  1. Windows 11 Home [Core]
+  2. Windows 11 Home N [CoreN]
+  5. Windows 11 Pro [Professional]
+
+Jeśli licencja dotyczy Windows 11 Home, buduj Windows 11 Home, nie Pro.
+Najbezpieczniej wybierać edycję po nazwie:
+
+  --edition "Windows 11 Home"
+
+Zamiast polegać na numerze indeksu, który może zmienić się pomiędzy obrazami.
+
+
+6. SPRAWDZENIE GPARTED LIVE
+===========================
+
+Informacja o przypiętej wersji:
+
+  fx11 gparted info
+
+Weryfikacja lokalnego pliku:
+
+  fx11 gparted verify "$GPARTED"
+
+Builder porównuje SHA-256 z przypiętym wydaniem. Obcy lub zmieniony obraz jest
+odrzucany.
+
+Główna ścieżka projektu:
+
+  FX Partition Manager — powered by GParted
+
+Tekstowy FX Partition Manager / DiskPart pozostaje ścieżką awaryjną i bazą do
+dalszego rozwoju.
+
+
+7. PODGLĄD PROFILI
+==================
+
+Lista profili:
+
+  fx11 profiles
+
+Podgląd działań bez modyfikowania ISO:
+
+  fx11 plan
+
+Domyślne profile rozwojowe:
+
+- tiny11-safe
+- privacy-balanced
+
+Chronione komponenty systemowe, takie jak Windows Update, Defender, Store,
+Edge/WebView2 i recovery, nie powinny być usuwane przez te profile.
+
+
+8. PIERWSZY BUILD — WINDOWS 11 HOME
+===================================
+
+Zalecany przykład:
+
+  cd ~/Dokumenty/FX11-Builder
+  . .venv/bin/activate
+
+  WINISO="$HOME/Pobrane/Win11_25H2_Polish_x64_v2.iso"
+  GPARTED="$HOME/Pobrane/FX11/gparted-live-1.8.1-6-amd64.iso"
+  OUT="$HOME/Pobrane/FX11/FX11-25H2-PL-x64-Home.iso"
+
+  fx11 build "$WINISO" \
+    --edition "Windows 11 Home" \
+    --gparted-live "$GPARTED" \
+    -o "$OUT"
+
+Builder powinien zakończyć się komunikatem:
+
+  BUILD VALID
+
+Jeśli plik wyjściowy już istnieje, Builder odmówi nadpisania. Świadome
+nadpisanie wymaga:
+
+  --force
+
+Przykład tylko do sprawdzenia planu bez rozpoczęcia buildu:
+
+  fx11 build "$WINISO" \
+    --edition "Windows 11 Home" \
+    --gparted-live "$GPARTED" \
+    --dry-run
+
+
+9. WALIDACJA GOTOWEGO ISO
+=========================
+
+  fx11 validate "$OUT"
+
+Oczekiwany wynik:
+
+  VALID: ...
+
+Walidacja strukturalna nie jest równoznaczna z udanym uruchomieniem systemu.
+Po niej zawsze należy wykonać test VM.
+
+
+10. AUDYT RÓŻNIC
+================
+
+  fx11 audit "$WINISO" "$OUT" \
+    -o "$OUT.delta.json"
+
+Raport JSON pokazuje m.in.:
+
+- różnice w strukturze ISO,
+- różnice w wybranym obrazie Windows,
+- oczekiwane pliki FX11,
+- manifest buildu,
+- elementy, które nadal wymagają audytu runtime w VM.
+
+
+11. TEST W QEMU / UEFI
+======================
+
+Wymagany jest OVMF.
+Na Debian-family bootstrap instaluje go automatycznie. W razie potrzeby:
+
+  sudo apt-get install -y ovmf
+
+Uruchomienie:
+
+  fx11 test "$OUT" \
+    --memory 4096 \
+    --cpus 2 \
+    --disk 80
+
+Domyślna ścieżka UEFI dla buildu z GParted ma prowadzić do:
+
+  FX GRUB
+    -> FX Partition Manager — powered by GParted
+
+W menu pozostaje również:
+
+  FX11 Installer / WinPE fallback
+
+W okresie rozwojowym FX GRUB jest niepodpisany. Secure Boot musi być wyłączony.
+Builder nie zmienia ustawień firmware automatycznie.
+
+
+12. TESTOWANIE WINPE
+====================
+
+Po ponownym uruchomieniu testu VM wybierz:
+
+  FX11 Installer / WinPE fallback
+
+Oczekiwany jest launcher FX11 z dostępem do:
+
+- tekstowego FX Partition Manager,
+- wiersza poleceń,
+- stockowego Windows Setup jako fallback.
+
+Tekstowy manager jest obecnie awaryjną ścieżką rozwojową. Główna ścieżka UX ma
+bazować na GParted.
+
+
+13. INSTALACJA NA PRAWDZIWYM KOMPUTERZE
+=======================================
+
+Nie przechodź na prawdziwy sprzęt, dopóki:
+
+1) build nie zakończy się BUILD VALID,
+2) fx11 validate nie zakończy się VALID,
+3) test UEFI w QEMU nie uruchomi FX GRUB,
+4) GParted Live nie wystartuje,
+5) WinPE fallback nie wystartuje,
+6) pełna instalacja na wirtualnym dysku nie zostanie zweryfikowana.
+
+Pierwszy sprzęt referencyjny projektu jest opisany w docs/TEST_HARDWARE.md.
+
+
+14. WINDOWS HOME / PRO I LICENCJA
+=================================
+
+FX11 Builder nie omija licencjonowania Windows i nie dostarcza kluczy.
+Edycja budowanego obrazu powinna odpowiadać posiadanej licencji / uprawnieniu
+aktywacyjnemu.
+
+Przykład dla Windows 11 Home:
+
+  fx11 build "$WINISO" \
+    --edition "Windows 11 Home" \
+    --gparted-live "$GPARTED" \
+    -o "$OUT"
+
+Builder wybiera jeden obraz źródłowy i eksportuje go do pojedynczego
+install.wim w wynikowym nośniku FX11.
+
+
+15. NAJCZĘSTSZE PROBLEMY
+========================
+
+"STATUS: NOT READY"
+  Uruchom scripts/bootstrap-debian.sh i ponownie fx11 doctor.
+
+"No /sources/install.wim or /sources/install.esd found"
+  Starsze wersje Buildera nie obsługiwały poprawnie współczesnych obrazów
+  Microsoft UDF. Zaktualizuj repo i upewnij się, że 7z jest dostępny.
+
+"7z is required"
+  Debian / Mint / LMDE:
+    sudo apt-get install -y 7zip
+
+"GParted Live input ... SHA mismatch"
+  Używasz innego obrazu niż wersja przypięta przez projekt. Sprawdź:
+    fx11 gparted info
+    fx11 gparted verify <plik.iso>
+
+"Output already exists"
+  Wybierz inną nazwę lub świadomie dodaj --force.
+
+Brak startu FX GRUB przy Secure Boot:
+  Aktualny payload rozwojowy jest niepodpisany. Wyłącz Secure Boot na czas
+  testów.
+
+
+16. WAŻNE PLIKI W REPOZYTORIUM
+==============================
+
+README.md
+  główny opis projektu
+
+ACKNOWLEDGEMENTS.md
+  projekty i osoby, którym FX11 przypisuje inspirację / wkład
+
+docs/THIRD_PARTY_COMPLIANCE.md
+  licencje i zasady redystrybucji komponentów zewnętrznych
+
+docs/FX_PARTITION_MANAGER_GPARTED.md
+  architektura integracji GParted
+
+docs/PROJECT_HISTORY.md
+  kanoniczna historia decyzji projektu
+
+docs/checkpoints/
+  szczegółowe checkpointy rozwoju
+
+docs/TEST_HARDWARE.md
+  plan walidacji na prawdziwym sprzęcie
+
+
+17. PODSTAWOWY WORKFLOW W SKRÓCIE
+================================
+
+  cd ~/Dokumenty/FX11-Builder
+  git pull --ff-only origin main
+  . .venv/bin/activate
+
+  fx11 doctor
+  fx11 inspect "$WINISO"
+  fx11 gparted verify "$GPARTED"
+
+  fx11 build "$WINISO" \
+    --edition "Windows 11 Home" \
+    --gparted-live "$GPARTED" \
+    -o "$OUT"
+
+  fx11 validate "$OUT"
+  fx11 audit "$WINISO" "$OUT" -o "$OUT.delta.json"
+  fx11 test "$OUT" --memory 4096 --cpus 2 --disk 80
+
+
+18. ZASADA PROJEKTU
+===================
+
+FX11 rekomenduje; użytkownik decyduje.
+
+Każda istotna zmiana powinna być jawna, możliwa do audytu i zapisana w
+historii projektu. Nie ogłaszamy funkcji jako działającej tylko dlatego, że kod
+ją zawiera — wymagamy obserwowanego testu.
