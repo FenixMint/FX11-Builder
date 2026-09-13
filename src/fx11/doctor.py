@@ -22,6 +22,7 @@ CORE_TOOLS = (
 
 OPTIONAL_TOOLS = (
     ("QEMU", "qemu-system-x86_64", "qemu-system-x86"),
+    ("GRUB UEFI builder", "grub-mkstandalone", "grub-efi-amd64-bin"),
 )
 
 
