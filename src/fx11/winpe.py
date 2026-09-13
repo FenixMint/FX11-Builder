@@ -26,7 +26,7 @@ echo.
 echo FX Partition Manager bootstrap loaded.
 echo.
 echo Current development media intentionally requires Secure Boot OFF
- echo when the unsigned FX Boot Manager is selected.
+echo when the unsigned FX Boot Manager is selected.
 echo.
 echo The production GUI will replace this bootstrap shell.
 echo.
