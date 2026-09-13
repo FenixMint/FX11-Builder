@@ -1,4 +1,8 @@
-from fx11.audit import compare_inventories, compare_wim_inventories, parse_7z_slt_files
+from pathlib import Path
+from types import SimpleNamespace
+
+from fx11 import audit as audit_module
+from fx11.audit import compare_inventories, compare_wim_inventories, list_wim_files, parse_7z_slt_files
 
 
 def test_compare_inventories_reports_added_removed_and_common():
@@ -72,3 +76,31 @@ Attributes = A
         "/sources/boot.wim",
         "/sources/install.wim",
     )
+
+
+def test_list_wim_files_uses_supported_wimdir_syntax_and_preserves_spaces(monkeypatch, tmp_path: Path):
+    wim = tmp_path / "install.wim"
+    wim.write_bytes(b"wim")
+    captured: dict[str, object] = {}
+
+    def fake_run(args: list[str], label: str):
+        captured["args"] = args
+        captured["label"] = label
+        return SimpleNamespace(
+            stdout=(
+                b"/Windows\n"
+                b"/Windows/System32/kernel32.dll\n"
+                b"/Program Files/Common Files/example.dll\n"
+            ),
+            stderr=b"",
+            returncode=0,
+        )
+
+    monkeypatch.setattr(audit_module, "_run", fake_run)
+
+    assert list_wim_files(wim, 1) == (
+        "/Program Files/Common Files/example.dll",
+        "/Windows",
+        "/Windows/System32/kernel32.dll",
+    )
+    assert captured["args"] == ["wimlib-imagex", "dir", str(wim), "1"]
