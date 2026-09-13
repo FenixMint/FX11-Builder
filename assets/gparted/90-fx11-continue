@@ -1,0 +1,74 @@
+#!/bin/sh
+set -eu
+
+# FX11 boot-time live-config hook. It does not alter GParted itself; it adds a
+# small handoff action around the upstream GParted Live environment.
+
+cat > /usr/local/sbin/fx11-continue-root <<'EOF'
+#!/bin/sh
+set -eu
+
+LABEL=FX11BOOT
+MARKER_REL=EFI/FX11/continue-installer
+MOUNTPOINT=/run/fx11boot
+
+DEVICE="$(blkid -L "$LABEL" 2>/dev/null || true)"
+if [ -z "$DEVICE" ]; then
+    echo "FX11BOOT EFI partition not found." >&2
+    exit 2
+fi
+
+mkdir -p "$MOUNTPOINT"
+if mountpoint -q "$MOUNTPOINT"; then
+    umount "$MOUNTPOINT"
+fi
+mount -o rw "$DEVICE" "$MOUNTPOINT"
+mkdir -p "$MOUNTPOINT/EFI/FX11"
+: > "$MOUNTPOINT/$MARKER_REL"
+sync
+umount "$MOUNTPOINT"
+
+systemctl reboot
+EOF
+chmod 0755 /usr/local/sbin/fx11-continue-root
+
+cat > /usr/local/bin/fx11-continue <<'EOF'
+#!/bin/sh
+set -eu
+
+QUESTION="Partitioning finished. Reboot and continue to FX11 Installer?"
+ERROR="Could not prepare the FX11 Installer handoff. You can reboot and select FX11 Installer manually."
+
+if command -v zenity >/dev/null 2>&1; then
+    zenity --question --title="FX11" --text="$QUESTION" || exit 0
+elif command -v xmessage >/dev/null 2>&1; then
+    xmessage -center -buttons "Continue:0,Cancel:1" "$QUESTION" || exit 0
+fi
+
+if ! sudo -n /usr/local/sbin/fx11-continue-root; then
+    if command -v zenity >/dev/null 2>&1; then
+        zenity --error --title="FX11" --text="$ERROR" || true
+    elif command -v xmessage >/dev/null 2>&1; then
+        xmessage -center "$ERROR" || true
+    fi
+    exit 1
+fi
+EOF
+chmod 0755 /usr/local/bin/fx11-continue
+
+cat > /usr/share/applications/fx11-installer.desktop <<'EOF'
+[Desktop Entry]
+Type=Application
+Name=Continue to FX11 Installer
+Comment=Finish partitioning and continue the FX11 installation
+Exec=/usr/local/bin/fx11-continue
+Icon=system-reboot
+Terminal=false
+Categories=System;
+EOF
+chmod 0644 /usr/share/applications/fx11-installer.desktop
+
+mkdir -p /home/user/Desktop
+cp /usr/share/applications/fx11-installer.desktop /home/user/Desktop/FX11-Installer.desktop
+chmod 0755 /home/user/Desktop/FX11-Installer.desktop
+chown -R user:user /home/user/Desktop
