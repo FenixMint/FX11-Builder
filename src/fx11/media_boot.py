@@ -4,6 +4,10 @@ from dataclasses import dataclass
 
 from .gparted import GPARTED_LIVE
 from .iso import BuilderError
+from .media_theme import (
+    MEDIA_THEME_CONFIG_ISO_PATH,
+    MEDIA_THEME_FONT_ISO_PATH,
+)
 
 
 FX11_MANIFEST_PATH = "/FX11-manifest.json"
@@ -59,11 +63,26 @@ def build_media_grub_config(
         "insmod search_file",
         "insmod loopback",
         "insmod chain",
+        "insmod video",
+        "insmod gfxterm",
+        "insmod png",
+        "insmod font",
         f"set timeout={timeout_seconds}",
         f"set default='{escaped_default}'",
+        "set gfxmode=auto",
+        "set gfxpayload=keep",
         "",
-        "menuentry 'FX Partition Manager — powered by GParted' --id 'fx-partition-manager' {",
-        f"  search --no-floppy --file --set=fxmedia {FX11_MANIFEST_PATH}",
+        f"search --no-floppy --file --set=fxmedia {FX11_MANIFEST_PATH}",
+        f"if [ -f ($fxmedia){MEDIA_THEME_FONT_ISO_PATH} ]; then",
+        f"  loadfont ($fxmedia){MEDIA_THEME_FONT_ISO_PATH}",
+        "  terminal_output gfxterm",
+        "fi",
+        f"if [ -f ($fxmedia){MEDIA_THEME_CONFIG_ISO_PATH} ]; then",
+        f"  set theme=($fxmedia){MEDIA_THEME_CONFIG_ISO_PATH}",
+        "  export theme",
+        "fi",
+        "",
+        "menuentry 'FX Partition Manager' --id 'fx-partition-manager' {",
         f"  set isofile='{escaped_gparted}'",
         "  loopback loop ($fxmedia)$isofile",
         (
@@ -75,7 +94,7 @@ def build_media_grub_config(
         "  initrd (loop)/live/initrd.img",
         "}",
         "",
-        "menuentry 'FX11 Installer / WinPE fallback' --id 'fx11-winpe' {",
+        "menuentry 'FX11 Installer' --id 'fx11-winpe' {",
         f"  search --no-floppy --file --set=winmedia {escaped_windows}",
         f"  chainloader ($winmedia){escaped_windows}",
         "}",
