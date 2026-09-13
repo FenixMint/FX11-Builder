@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from .gparted import GPARTED_LIVE
 from .iso import BuilderError
+from .media_efi import MEDIA_WINPE_READY_PATH
 from .media_theme import (
     MEDIA_THEME_BACKGROUND_ISO_PATH,
     MEDIA_THEME_CONFIG_ISO_PATH,
@@ -12,7 +13,7 @@ from .media_theme import (
 
 
 FX11_MANIFEST_PATH = "/FX11-manifest.json"
-WINDOWS_MEDIA_BOOT_PATH = "/efi/microsoft/boot/bootmgfw.efi"
+WINDOWS_MEDIA_BOOT_PATH = "/EFI/Microsoft/Boot/bootmgfw.efi"
 GPARTED_LOCALE = "pl_PL.UTF-8"
 GPARTED_KEYBOARD_LAYOUT = "pl"
 MEDIA_THEME_ESP_DIR = "/EFI/FX11/theme"
@@ -73,6 +74,7 @@ def build_media_grub_config(
         "insmod video",
         "insmod gfxterm",
         "insmod gfxterm_background",
+        "insmod gfxmenu",
         "insmod png",
         "insmod font",
         f"set timeout={timeout_seconds}",
@@ -129,8 +131,8 @@ def build_media_grub_config(
         "}",
         "",
         "menuentry 'FX11 Installer' --id 'fx11-winpe' {",
-        f"  search --no-floppy --file --set=winmedia {escaped_windows}",
-        f"  chainloader ($winmedia){escaped_windows}",
+        f"  search --no-floppy --file --set=winboot {MEDIA_WINPE_READY_PATH}",
+        f"  chainloader ($winboot){escaped_windows}",
         "}",
         "",
         "menuentry 'UEFI Firmware Settings' --id 'uefi-firmware' {",
