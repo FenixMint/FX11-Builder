@@ -1,0 +1,134 @@
+FX11 BUILDER — DRUGA INSTANCJA / NOWA MASZYNA
+==============================================
+
+Cel: uruchomić FX11 Builder na innej maszynie lub VM bez zakładania z góry,
+gdzie znajdują się pliki wejściowe.
+
+1. POBIERZ BUILDER
+==================
+
+Wybierz dowolny katalog roboczy i sklonuj repozytorium:
+
+  git clone https://github.com/FenixMint/FX11-Builder.git
+  cd FX11-Builder
+
+2. PRZYGOTUJ ŚRODOWISKO
+=======================
+
+Na Debianie / LMDE / Linux Mint:
+
+  chmod +x scripts/bootstrap-debian.sh
+  ./scripts/bootstrap-debian.sh
+
+Następnie:
+
+  . .venv/bin/activate
+  fx11 doctor
+  pytest
+
+Oczekiwany wynik końcowy dla doctor:
+
+  STATUS: READY
+
+3. USTAL RZECZYWISTE ŚCIEŻKI DO PLIKÓW
+======================================
+
+Nie zakładaj żadnego konkretnego katalogu. Najpierw ustal, gdzie faktycznie są:
+
+- źródłowy obraz ISO Windows 11,
+- przypięty obraz GParted Live,
+- katalog, w którym ma powstać wynikowe ISO FX11.
+
+Możesz wyszukać pliki np.:
+
+  find "$HOME" -type f -name '*.iso' 2>/dev/null
+
+Albo sprawdzić wybrany katalog:
+
+  ls -lh /wybrany/katalog
+
+Po ustaleniu ścieżek przypisz je jawnie do zmiennych:
+
+  WINISO="/pełna/ścieżka/do/Windows.iso"
+  GPARTED="/pełna/ścieżka/do/gparted-live.iso"
+  OUT="/pełna/ścieżka/do/FX11-Home.iso"
+
+Sprawdź, czy pliki istnieją:
+
+  ls -lh "$WINISO" "$GPARTED"
+
+4. SPRAWDŹ ŹRÓDŁOWY WINDOWS
+===========================
+
+  fx11 inspect "$WINISO"
+
+Nie zakładaj indeksu edycji. Odczytaj go z rzeczywistego ISO.
+
+Dla Windows 11 Home wybieraj po nazwie:
+
+  --edition "Windows 11 Home"
+
+5. SPRAWDŹ GPARTED LIVE
+=======================
+
+  fx11 gparted info
+  fx11 gparted verify "$GPARTED"
+
+Builder powinien potwierdzić przypiętą wersję i SHA-256.
+
+6. BUILD
+========
+
+  fx11 build "$WINISO" \
+    --edition "Windows 11 Home" \
+    --gparted-live "$GPARTED" \
+    -o "$OUT"
+
+Jeśli wszystko przebiegnie poprawnie:
+
+  BUILD VALID
+
+7. WALIDACJA
+============
+
+  fx11 validate "$OUT"
+
+Oczekiwany wynik:
+
+  VALID: ...
+
+8. AUDYT
+========
+
+  fx11 audit "$WINISO" "$OUT" \
+    -o "$OUT.delta.json"
+
+9. TEST QEMU / UEFI
+===================
+
+  fx11 test "$OUT" \
+    --memory 4096 \
+    --cpus 2 \
+    --disk 80
+
+Oczekiwana ścieżka:
+
+  OVMF / UEFI
+    -> FX GRUB
+    -> FX Partition Manager — powered by GParted
+
+W menu powinien być również:
+
+  FX11 Installer / WinPE fallback
+
+10. WAŻNA ZASADA
+================
+
+Instrukcje FX11 nie powinny zakładać, że pliki znajdują się np. w ~/Pobrane,
+~/Downloads, /mnt/data ani w innym konkretnym katalogu.
+
+Zawsze najpierw ustal rzeczywistą lokalizację plików, a dopiero potem przypisz
+pełne ścieżki do zmiennych WINISO, GPARTED i OUT.
+
+Repozytorium zawiera Builder i dokumentację, ale nie zawiera obrazu Windows.
+Użytkownik dostarcza własne źródłowe ISO Windows 11.
