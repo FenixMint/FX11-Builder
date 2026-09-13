@@ -5,15 +5,18 @@ from dataclasses import dataclass
 from .gparted import GPARTED_LIVE
 from .iso import BuilderError
 from .media_theme import (
+    MEDIA_THEME_BACKGROUND_ISO_PATH,
     MEDIA_THEME_CONFIG_ISO_PATH,
     MEDIA_THEME_FONT_ISO_PATH,
 )
 
 
 FX11_MANIFEST_PATH = "/FX11-manifest.json"
-WINDOWS_MEDIA_BOOT_PATH = "/bootmgr.efi"
+WINDOWS_MEDIA_BOOT_PATH = "/efi/microsoft/boot/bootmgfw.efi"
 GPARTED_LOCALE = "pl_PL.UTF-8"
 GPARTED_KEYBOARD_LAYOUT = "pl"
+MEDIA_THEME_ESP_DIR = "/EFI/FX11/theme"
+MEDIA_CONTINUE_MARKER_PATH = "/EFI/FX11/continue-installer"
 
 
 @dataclass(frozen=True)
@@ -55,6 +58,10 @@ def build_media_grub_config(
     escaped_locale = _escape_grub_single(gparted_locale)
     escaped_keyboard = _escape_grub_single(gparted_keyboard_layout)
 
+    esp_theme_config = f"{MEDIA_THEME_ESP_DIR}/theme.txt"
+    esp_theme_background = f"{MEDIA_THEME_ESP_DIR}/background.png"
+    esp_theme_font = f"{MEDIA_THEME_ESP_DIR}/unicode.pf2"
+
     lines = [
         "insmod part_gpt",
         "insmod fat",
@@ -65,21 +72,48 @@ def build_media_grub_config(
         "insmod chain",
         "insmod video",
         "insmod gfxterm",
+        "insmod gfxterm_background",
         "insmod png",
         "insmod font",
         f"set timeout={timeout_seconds}",
         f"set default='{escaped_default}'",
         "set gfxmode=auto",
         "set gfxpayload=keep",
+        "set color_normal=light-gray/black",
+        "set color_highlight=light-green/black",
         "",
         f"search --no-floppy --file --set=fxmedia {FX11_MANIFEST_PATH}",
-        f"if [ -f ($fxmedia){MEDIA_THEME_FONT_ISO_PATH} ]; then",
-        f"  loadfont ($fxmedia){MEDIA_THEME_FONT_ISO_PATH}",
+        "",
+        "# Prefer theme assets inside the writable FX11BOOT EFI FAT image.",
+        f"if search --no-floppy --file --set=fxtheme {esp_theme_font}; then",
+        f"  loadfont ($fxtheme){esp_theme_font}",
         "  terminal_output gfxterm",
+        f"  if [ -f ($fxtheme){esp_theme_background} ]; then",
+        f"    background_image ($fxtheme){esp_theme_background}",
+        "  fi",
+        f"  if [ -f ($fxtheme){esp_theme_config} ]; then",
+        f"    set theme=($fxtheme){esp_theme_config}",
+        "    export theme",
+        "  fi",
+        "else",
+        "  # ISO-tree fallback keeps the graphical menu recoverable on non-hybrid media.",
+        f"  if [ -f ($fxmedia){MEDIA_THEME_FONT_ISO_PATH} ]; then",
+        f"    loadfont ($fxmedia){MEDIA_THEME_FONT_ISO_PATH}",
+        "    terminal_output gfxterm",
+        f"    if [ -f ($fxmedia){MEDIA_THEME_BACKGROUND_ISO_PATH} ]; then",
+        f"      background_image ($fxmedia){MEDIA_THEME_BACKGROUND_ISO_PATH}",
+        "    fi",
+        "  fi",
+        f"  if [ -f ($fxmedia){MEDIA_THEME_CONFIG_ISO_PATH} ]; then",
+        f"    set theme=($fxmedia){MEDIA_THEME_CONFIG_ISO_PATH}",
+        "    export theme",
+        "  fi",
         "fi",
-        f"if [ -f ($fxmedia){MEDIA_THEME_CONFIG_ISO_PATH} ]; then",
-        f"  set theme=($fxmedia){MEDIA_THEME_CONFIG_ISO_PATH}",
-        "  export theme",
+        "",
+        "# A future GParted Continue action can request the installer on next boot.",
+        f"if search --no-floppy --file --set=fxhandoff {MEDIA_CONTINUE_MARKER_PATH}; then",
+        "  set default='fx11-winpe'",
+        "  set timeout=1",
         "fi",
         "",
         "menuentry 'FX Partition Manager' --id 'fx-partition-manager' {",
