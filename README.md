@@ -1,5 +1,10 @@
 # FX11 Builder
 
+> [!WARNING]
+> **Status: TESTING / PRE-RELEASE**
+>
+> FX11 Builder is under active hardware and installer testing. The current `main` branch is intended for development and testing, not production use. Boot media, FX Partition Manager, the FX11 Installer handoff and the full installation flow are still being validated on real hardware.
+
 FX11 Builder is a Linux-native Windows 11 image builder and installation-media project.
 
 The project started from a simple observation: **tiny11/tiny11builder proved that a carefully trimmed Windows 11 can remain useful on hardware where the stock experience is unnecessarily heavy, but the available builder workflow is Windows/PowerShell-centric.** FX11 began as an attempt to build that kind of image reproducibly from Linux, and has since grown into a broader installation platform with its own partitioning, boot, privacy, audit and first-run design.
