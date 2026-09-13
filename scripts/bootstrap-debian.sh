@@ -13,6 +13,7 @@ sudo apt-get install -y \
   python3-pip \
   wimtools \
   xorriso \
+  7zip \
   grub-efi-amd64-bin \
   mtools \
   qemu-system-x86 \
