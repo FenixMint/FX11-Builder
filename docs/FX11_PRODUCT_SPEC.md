@@ -39,8 +39,11 @@ The first-run experience:
 4. confirms/changes taskbar position,
 5. offers recommended browser and application installation,
 6. explains why each offered application may be useful,
-7. downloads the current vendor release at install time instead of shipping stale installers inside the ISO,
-8. allows the user to skip optional third-party software.
+7. offers privacy and Proton tools,
+8. offers optional WSL2 setup with Linux distribution selection,
+9. explains the optional dual-boot path for users who want a full Linux installation beside Windows,
+10. downloads the current vendor release at install time instead of shipping stale installers inside the ISO,
+11. allows the user to skip optional third-party software.
 
 No optional third-party application is installed silently without user consent.
 
@@ -65,10 +68,33 @@ FX11 First Run should encourage the user to choose at least one browser from the
 
 - **Thunderbird** — open-source desktop email client with support for multiple providers and local mail workflows.
 
+### Office and documents
+
+- **LibreOffice** — strongly recommended open-source office suite and the preferred FX11 office package.
+- FX11 should explain that LibreOffice is actively developed, works locally, supports common Microsoft Office formats and does not require a cloud account for normal use.
+- **Apache OpenOffice** is not part of the recommended FX11 catalogue because LibreOffice is the preferred actively developed open-source office suite.
+
+### PDF tools
+
+- **SumatraPDF** — lightweight, fast open-source reader for PDF and other document formats.
+- **PDFsam Basic** — open-source local PDF utility for merging, splitting, extracting and rotating pages.
+- **LibreOffice Draw** — useful for opening and making basic edits to many PDF files as part of LibreOffice.
+- **Stirling-PDF** — advanced optional PDF toolkit for users who need a broader feature set such as conversion, OCR, redaction and document operations. It should be presented as an advanced/local-tool option rather than a mandatory component.
+
 ### Archives
 
 - **7-Zip** — lightweight open-source archive utility with excellent 7z support.
 - **PeaZip** — graphical archive manager with broad format support and additional archive/security tools.
+
+### Privacy and Proton tools
+
+FX11 should offer a dedicated **Privacy & Security** section with Proton tools as recommended privacy-oriented services.
+
+- **Proton VPN** — optional encrypted VPN client for protecting network traffic, especially on untrusted networks.
+- **Proton Pass** — optional password manager for passwords, passkeys, 2FA workflows and aliases.
+- **Proton Drive** — optional encrypted cloud-storage client and privacy-oriented alternative to OneDrive/Google Drive.
+- **Proton Mail / Calendar** — present as privacy-oriented communication services, while clearly explaining when desktop or premium functionality depends on the user's Proton plan.
+- Proton tools remain optional; FX11 should explain what each does before installation and must not create accounts on the user's behalf.
 
 ### Drivers and important system components
 
@@ -85,6 +111,44 @@ The current supported Microsoft Visual C++ Redistributables are treated as **man
 - On 64-bit Windows, both x86 and x64 packages are installed because many Windows applications remain 32-bit and require the x86 runtime.
 - FX11 should verify whether the current supported runtimes are already present and install/update them automatically when required.
 - These packages must come from Microsoft or an official Microsoft package source.
+
+## Linux in FX11
+
+FX11 should actively support users who want Linux tools without forcing them to abandon Windows.
+
+### WSL2
+
+FX11 First Run and FX11 Control Center should offer an optional **Linux / WSL2** module.
+
+The module should:
+
+- explain in plain language what WSL2 is and when it is useful,
+- offer to enable the required Windows features,
+- let the user choose which Linux distribution to install from the distributions currently available to WSL,
+- show short descriptions for popular choices such as Ubuntu, Debian, openSUSE and Kali where available,
+- allow installation to be skipped and revisited later,
+- include a short getting-started guide after installation,
+- provide basic commands for updating packages, accessing Windows files, launching Linux shells and shutting down/restarting WSL,
+- include notes for developers about Git, SSH, Python, containers and command-line tooling where appropriate,
+- avoid hard-coding a distro list that could become stale; the implementation should query the currently supported/available WSL distributions at runtime.
+
+WSL2 is optional and must not be enabled silently.
+
+### Dual boot: Windows + Linux
+
+FX11 should also present **dual boot** as an optional advanced path for users who want a complete Linux desktop alongside Windows.
+
+- First Run should not repartition disks or install Linux automatically.
+- FX11 should provide a clear guide explaining the difference between WSL2 and dual boot.
+- The guide should cover preparation, backups, disk-space planning, UEFI/GPT basics, BitLocker/device-encryption considerations, Secure Boot considerations, installation order and boot-manager recovery at a high level.
+- FX11 should recommend creating a full backup before resizing partitions or installing another operating system.
+- The guide may recommend suitable Linux distributions by user profile, but the final choice remains entirely with the user.
+- A future FX11 tool may assist with readiness checks, but destructive partitioning must never occur without explicit, separate confirmation.
+
+Suggested user-facing choice:
+
+- **WSL2 — Linux inside Windows**: best for Linux command-line tools, development and occasional Linux workflows without leaving Windows.
+- **Dual boot — full Linux + Windows**: best for users who want a complete native Linux desktop, direct hardware access and the option to choose an operating system at startup.
 
 ## Application installation policy
 
@@ -145,6 +209,8 @@ Responsibilities:
 - optional app recommendations and installs,
 - privacy explanation,
 - verification/installation of mandatory compatibility runtimes,
+- optional WSL2 setup and distribution selection,
+- dual-boot education and guidance,
 - creation of the user's chosen FX11 desktop setup.
 
 ### FX11 Control Center
@@ -155,6 +221,7 @@ Planned sections:
 - Start & Taskbar,
 - Applications,
 - Privacy,
+- Linux / WSL2,
 - Windows,
 - Updates,
 - FX11 Status.
@@ -163,4 +230,4 @@ Planned sections:
 
 **FX11 gives the user choices instead of silently making permanent choices for them.**
 
-The base system can provide opinionated defaults, but user-facing shell, applications and privacy options must remain understandable, reversible and configurable after installation.
+The base system can provide opinionated defaults, but user-facing shell, applications, Linux integration and privacy options must remain understandable, reversible and configurable after installation.
