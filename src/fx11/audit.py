@@ -5,10 +5,18 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import tempfile
 
-from .iso import BuilderError, extract_install_image, read_editions, sha256_file
+from .iso import (
+    BuilderError,
+    detect_media_format,
+    extract_install_image,
+    extract_iso_member,
+    read_editions,
+    sha256_file,
+)
 
 
 @dataclass(frozen=True)
@@ -40,10 +48,52 @@ def _run(args: list[str], label: str) -> subprocess.CompletedProcess:
     return proc
 
 
+def parse_7z_slt_files(text: str) -> tuple[str, ...]:
+    """Parse file paths from `7z l -slt` output, ignoring directories and archive metadata."""
+    files: set[str] = set()
+    record: dict[str, str] = {}
+
+    def flush() -> None:
+        if not record:
+            return
+        path = record.get("Path", "").strip()
+        if not path or "Type" in record:
+            return
+        folder = record.get("Folder", "").strip().casefold()
+        attrs = record.get("Attributes", "").strip().upper()
+        if folder in {"+", "1", "true"} or attrs.startswith("D"):
+            return
+        files.add(_normalize_path(path))
+
+    for raw in text.splitlines():
+        line = raw.rstrip("\r\n")
+        if not line.strip():
+            flush()
+            record = {}
+            continue
+        if " = " not in line:
+            continue
+        key, value = line.split(" = ", 1)
+        record[key.strip()] = value.strip()
+    flush()
+    return tuple(sorted(files))
+
+
 def list_iso_files(iso: Path) -> tuple[str, ...]:
     iso = iso.expanduser().resolve()
     if not iso.is_file():
         raise BuilderError(f"ISO not found: {iso}")
+
+    if detect_media_format(iso) == "udf":
+        sevenzip = shutil.which("7z")
+        if sevenzip is None:
+            raise BuilderError("7z is required to inventory UDF Microsoft installation media.")
+        proc = _run([sevenzip, "l", "-slt", str(iso)], "Unable to inventory UDF ISO with 7-Zip")
+        files = parse_7z_slt_files(proc.stdout.decode("utf-8", errors="replace"))
+        if not files:
+            raise BuilderError("7-Zip returned no file inventory for the UDF ISO.")
+        return files
+
     proc = _run(
         ["xorriso", "-indev", str(iso), "-find", "/", "-type", "f", "-exec", "lsdl", "--"],
         "Unable to inventory ISO with xorriso",
@@ -76,13 +126,7 @@ def compare_inventories(source_files: tuple[str, ...], output_files: tuple[str, 
 
 def extract_iso_path(iso: Path, iso_path: str, destination: Path) -> Path:
     destination.parent.mkdir(parents=True, exist_ok=True)
-    _run(
-        ["xorriso", "-osirrox", "on", "-indev", str(iso), "-extract", iso_path, str(destination)],
-        f"Unable to extract {iso_path} from {iso}",
-    )
-    if not destination.is_file():
-        raise BuilderError(f"Expected extracted file is missing: {destination}")
-    return destination
+    return extract_iso_member(iso, iso_path, destination)
 
 
 def _read_fx11_manifest(output_iso: Path, work: Path) -> dict[str, object]:
@@ -91,6 +135,34 @@ def _read_fx11_manifest(output_iso: Path, work: Path) -> dict[str, object]:
         return json.loads(target.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, UnicodeError) as exc:
         raise BuilderError(f"Unable to parse FX11 manifest: {exc}") from exc
+
+
+def _expected_fx11_paths(manifest: dict[str, object]) -> set[str]:
+    expected = {
+        "/FX11-manifest.json",
+        "/sources/$OEM$/$$/Setup/Scripts/SetupComplete.cmd",
+        "/sources/$OEM$/$$/Setup/Scripts/FX11.ps1",
+        "/sources/$OEM$/$1/FX11/manifest.json",
+        "/FX11/boot/EFI/FX11/fxbootx64.efi",
+        "/FX11/boot/EFI/FX11/grub.cfg",
+        "/FX11/boot/EFI/FX11/theme/theme.txt",
+    }
+
+    injected = manifest.get("injected_files")
+    if isinstance(injected, dict):
+        for path in injected:
+            if isinstance(path, str) and path.startswith("/"):
+                expected.add(path)
+
+    third_party = manifest.get("third_party")
+    if isinstance(third_party, dict):
+        gparted = third_party.get("gparted_live")
+        if isinstance(gparted, dict):
+            iso_path = gparted.get("iso_path")
+            if isinstance(iso_path, str) and iso_path.startswith("/"):
+                expected.add(iso_path)
+
+    return expected
 
 
 def list_wim_files(wim: Path, index: int) -> tuple[str, ...]:
@@ -143,20 +215,12 @@ def build_delta_report(source_iso: Path, output_iso: Path) -> dict[str, object]:
     output_files = list_iso_files(output_iso)
     delta = compare_inventories(source_files, output_files)
 
-    expected_fx11_paths = {
-        "/FX11-manifest.json",
-        "/sources/$OEM$/$$/Setup/Scripts/SetupComplete.cmd",
-        "/sources/$OEM$/$$/Setup/Scripts/FX11.ps1",
-        "/sources/$OEM$/$1/FX11/manifest.json",
-        "/FX11/boot/EFI/FX11/fxbootx64.efi",
-        "/FX11/boot/EFI/FX11/grub.cfg",
-        "/FX11/boot/EFI/FX11/theme/theme.txt",
-    }
-    unexpected_added = tuple(sorted(path for path in delta.added if path not in expected_fx11_paths))
-
     with tempfile.TemporaryDirectory(prefix="fx11-audit-") as temp_name:
         work = Path(temp_name)
         manifest = _read_fx11_manifest(output_iso, work)
+        expected_fx11_paths = _expected_fx11_paths(manifest)
+        unexpected_added = tuple(sorted(path for path in delta.added if path not in expected_fx11_paths))
+
         source_index_raw = manifest.get("edition", {}).get("source_index", 0) if isinstance(manifest.get("edition"), dict) else 0
         try:
             source_index = int(source_index_raw)
@@ -241,7 +305,7 @@ def build_delta_report(source_iso: Path, output_iso: Path) -> dict[str, object]:
                 "installed ESP contents and UEFI boot order",
             ],
             "notes": [
-                "This v2 report performs ISO filesystem and selected install-image path inventory comparison.",
+                "This v2 report performs ISO/UDF filesystem and selected install-image path inventory comparison.",
                 "Runtime state cannot be proven from ISO contents alone; the remaining runtime checks require an installed disposable VM snapshot.",
                 "The current FX Boot Manager payload is intentionally unsigned and requires Secure Boot off during development.",
                 "File-path equality inside WIM does not prove byte-for-byte equality of every file; a later forensic mode can hash selected or all WIM file payloads when performance permits.",
