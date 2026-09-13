@@ -82,11 +82,23 @@ Description:
 
 #### What does “Other OS” mean?
 
-> **Other OS** means another operating system installed alongside FX11. This can be a Linux distribution such as **Linux Mint, Fedora, openSUSE, Rocky Linux, AlmaLinux, Debian or Arch Linux**; a BSD-family system such as **FreeBSD or OpenBSD**; or another compatible operating system that can be installed on the computer's hardware and boot configuration.
+**Other OS** means another operating system installed alongside FX11. The installer should explain this by family instead of presenting one flat list.
+
+**Linux**  
+Examples used by FX11: **Linux Mint, Fedora, openSUSE, Rocky Linux, AlmaLinux, Debian and Arch Linux**.
+
+**BSD**  
+Examples used by FX11: **FreeBSD, OpenBSD and NetBSD**.
+
+**Other Unix / Unix-like systems**  
+This category may include other compatible Unix or Unix-like operating systems where their installer, boot method and hardware support allow coexistence with Windows 11 on the same machine. Examples may include **illumos-based systems such as OmniOS or OpenIndiana**, where technically appropriate.
+
+**Other operating systems**  
+The reserved area is intentionally generic and may also be used by a different compatible operating system outside the Linux/BSD/Unix-like families. FX11 must not imply guaranteed compatibility; the system's installer, UEFI support, Secure Boot behavior, hardware drivers and boot manager determine whether a particular OS can actually be installed successfully.
 
 FX11 documentation and user-facing examples should use the Linux distributions listed above when examples are needed. Ubuntu is intentionally not part of the FX11 example/recommendation list.
 
-> FX11 does not assume that the second operating system is Linux. It therefore does not create Linux-specific filesystems, swap, `/home`, BSD partitions or other OS-specific structures. The reserved **Other OS** area remains unallocated so that the installer of the chosen operating system can create the layout it actually needs.
+> FX11 does not assume what the second operating system will be. It therefore does not create Linux-specific filesystems, swap, `/home`, BSD disk structures or any other OS-specific partitions. The reserved **Other OS** area remains unallocated so that the installer of the chosen operating system can create the layout it actually needs.
 
 Compatibility note:
 
@@ -152,7 +164,7 @@ Suggested text:
 
 ### Unallocated — Other OS
 
-> Disk space intentionally left unused by Windows and reserved for another operating system. For example, a Linux or BSD installer can use this area later to create the partitions and filesystems required by that operating system.
+> Disk space intentionally left unused by Windows and reserved for another operating system. Linux, BSD, another Unix-like system or another compatible OS can later use this area and create the partitions and filesystems it requires.
 
 ## Step 4 — Final review before partitioning
 
@@ -210,7 +222,7 @@ The installer must never automatically choose another disk because it appears em
 
 ## Existing operating systems
 
-If an existing Windows, Linux, BSD or other operating-system installation is detected on the selected disk, the installer should say so where detection is reliable.
+If an existing Windows, Linux, BSD, Unix-like or other operating-system installation is detected on the selected disk, the installer should say so where detection is reliable.
 
 Suggested warning:
 
@@ -230,6 +242,6 @@ For multi-OS users, the UI should emphasize that **FX11 + Other OS reserves spac
 
 Once the selected layout has been created successfully, the installer can continue to Windows installation without asking the user to manually select the partitions that FX11 just created.
 
-For the FX11 + Other OS mode, the installer should remember that the machine was prepared for another operating system so that FX11 Control Center can later show a non-intrusive **Multi-OS Guide** explaining the next steps for Linux, BSD and other compatible operating systems.
+For the FX11 + Other OS mode, the installer should remember that the machine was prepared for another operating system so that FX11 Control Center can later show a non-intrusive **Multi-OS Guide** explaining the next steps for Linux, BSD, Unix-like and other compatible operating systems.
 
 This guide must not imply that WSL2 is required. WSL2 remains an entirely separate, optional feature that can be installed later from FX11 First Run or FX11 Control Center.
