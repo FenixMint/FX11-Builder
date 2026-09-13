@@ -134,6 +134,36 @@ def extract_iso_member(
     return destination
 
 
+def ensure_windows_uefi_fallback(media_tree: Path) -> Path:
+    """Ensure the Microsoft WinPE chainload target exists in an extracted tree.
+
+    Some current Microsoft UDF installation media provide the signed Windows
+    removable-media loader only as /efi/boot/bootx64.efi and do not also expose
+    /efi/microsoft/boot/bootmgfw.efi in the UDF tree. FX11 later owns the
+    removable-media path with its unsigned development GRUB loader, so preserve
+    the original Microsoft bytes at the canonical Microsoft boot-manager path
+    before that replacement happens.
+    """
+    media_tree = media_tree.expanduser().resolve()
+    fallback = media_tree / "efi" / "microsoft" / "boot" / "bootmgfw.efi"
+    if fallback.is_file() and fallback.stat().st_size > 0:
+        return fallback
+
+    removable = media_tree / "efi" / "boot" / "bootx64.efi"
+    if not removable.is_file() or removable.stat().st_size == 0:
+        raise BuilderError(
+            "Extracted Microsoft media contains neither /efi/microsoft/boot/bootmgfw.efi "
+            "nor /efi/boot/bootx64.efi; FX11 cannot preserve a WinPE UEFI fallback."
+        )
+
+    fallback.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(removable, fallback)
+    if sha256_file(fallback) != sha256_file(removable):
+        fallback.unlink(missing_ok=True)
+        raise BuilderError("Microsoft UEFI fallback copy failed integrity verification.")
+    return fallback
+
+
 def extract_media_tree(source_iso: Path, destination: Path) -> Path:
     """Extract the complete source media tree with 7-Zip.
 
@@ -166,6 +196,7 @@ def extract_media_tree(source_iso: Path, destination: Path) -> Path:
     missing = [str(path.relative_to(destination)) for path in required if not path.is_file()]
     if missing:
         raise BuilderError("Extracted UDF installation media is missing required boot files: " + ", ".join(missing))
+    ensure_windows_uefi_fallback(destination)
     return destination
 
 
