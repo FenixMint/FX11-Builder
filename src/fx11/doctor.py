@@ -18,11 +18,12 @@ class ToolCheck:
 CORE_TOOLS = (
     ("wimlib", "wimlib-imagex", "wimtools"),
     ("xorriso", "xorriso", "xorriso"),
+    ("GRUB UEFI builder", "grub-mkstandalone", "grub-efi-amd64-bin"),
 )
 
 OPTIONAL_TOOLS = (
+    ("GParted media FAT builder", "mformat", "mtools"),
     ("QEMU", "qemu-system-x86_64", "qemu-system-x86"),
-    ("GRUB UEFI builder", "grub-mkstandalone", "grub-efi-amd64-bin"),
 )
 
 
