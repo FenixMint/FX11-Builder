@@ -122,13 +122,46 @@ GRUB introduces an important compatibility consideration: Secure Boot.
 
 FX11 must not pretend that an arbitrary unsigned GRUB binary will boot with Secure Boot enabled.
 
-The product should support one of these explicit states:
+### Current development target
 
-- **Secure Boot compatible FX Boot Manager** using a properly trusted/signed boot chain when that implementation is available,
-- **Secure Boot off** with standard unsigned GRUB,
-- **Windows Boot Manager only** as an alternative when the user wants to preserve Secure Boot and FX11 cannot yet provide a trusted GRUB chain.
+For the first working FX11 release and today's implementation target, **Secure Boot is intentionally disabled**.
 
-The user must be told which mode is active.
+The installer should detect the Secure Boot state and show a clear message before installing FX Boot Manager:
+
+> FX Boot Manager in this build requires Secure Boot to be disabled. FX11 does not change firmware settings automatically.
+
+If Secure Boot is enabled, the installer must not silently install an unsigned GRUB path and leave the machine unbootable. It should stop the FX Boot Manager installation step and offer one of these choices where available:
+
+- reboot to firmware settings so the user can disable Secure Boot,
+- continue with Windows Boot Manager only,
+- cancel and return to the installation summary.
+
+Secure Boot being disabled must not prevent the FX11 operating system itself from being installed if the selected deployment path is otherwise valid.
+
+### Production target
+
+The planned production design is a Secure Boot compatible FX Boot Manager chain:
+
+`UEFI Secure Boot -> trusted shim -> signed FX GRUB -> selected operating system loader`
+
+The intended implementation should support:
+
+- a trusted/signed shim suitable for Secure Boot,
+- FX GRUB signed by a key trusted by that shim,
+- preservation of the Microsoft Windows boot loader as the FX11 chainload target,
+- validation of every executable component in the Secure Boot chain,
+- key rotation and revocation planning,
+- support for current Microsoft UEFI CA trust requirements where applicable.
+
+Until that signed production chain is available and tested, FX11 must describe Secure Boot support as planned rather than imply that the current unsigned GRUB build supports it.
+
+### Explicit supported states
+
+FX11 therefore recognizes these states:
+
+- **Current development mode: Secure Boot OFF + FX Boot Manager**,
+- **Fallback: Secure Boot ON + Windows Boot Manager only**,
+- **Future production mode: Secure Boot ON + signed FX Boot Manager chain**.
 
 FX11 should never silently disable Secure Boot in firmware.
 
@@ -150,6 +183,8 @@ Theme requirements:
 The default entry after a fresh installation is **FX11**, but the user can change it later in FX11 Control Center.
 
 Suggested default timeout: 5 seconds, configurable later.
+
+For the first build, the theme should be kept separate from GRUB logic so the background, logo and menu styling can later be replaced without changing boot detection or chainloading code.
 
 ## 6. Multi-OS safety
 
@@ -186,15 +221,34 @@ At minimum the repair path should be able to:
 
 This prevents FX Boot Manager from becoming a single point of failure.
 
+## 8. Implementation order
+
+For the first working installer, implementation should proceed in this order:
+
+1. UEFI/GPT only.
+2. Secure Boot detection and explicit status in the installer.
+3. Unsigned GRUB-based FX Boot Manager for Secure Boot OFF.
+4. Preserve existing EFI loaders and UEFI boot entries.
+5. Create a dedicated FX11 menu entry that chainloads Windows Boot Manager.
+6. Detect other UEFI loaders and expose them without modifying their partitions.
+7. Add the FX11 visual theme/background.
+8. Add boot repair from FX11 installation media.
+9. Add signed shim/GRUB development and Secure Boot validation in QEMU/OVMF.
+10. Move to production Secure Boot signing only after the full chain has been audited and tested.
+
 ## Product summary
 
-The resulting model is:
+The current development model is:
 
-`UEFI -> FX Boot Manager -> chosen OS`
+`UEFI + Secure Boot OFF -> FX Boot Manager -> chosen OS`
 
 and for FX11 specifically:
 
 `UEFI -> FX Boot Manager -> Windows Boot Manager -> FX11`
+
+The future production model is:
+
+`UEFI + Secure Boot ON -> trusted shim -> signed FX Boot Manager -> chosen OS`
 
 FX11 compatibility policy is equally simple:
 
