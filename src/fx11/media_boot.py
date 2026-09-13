@@ -110,17 +110,17 @@ def build_media_grub_config(
         "  fi",
         "fi",
         "",
-        "# A future GParted Continue action can request the installer on next boot.",
+        "# Continue from GParted requests the installer on the next USB boot.",
         f"if search --no-floppy --file --set=fxhandoff {MEDIA_CONTINUE_MARKER_PATH}; then",
         "  set default='fx11-winpe'",
-        "  set timeout=1",
+        "  set timeout=3",
         "fi",
         "",
         "menuentry 'FX Partition Manager' --id 'fx-partition-manager' {",
         f"  set isofile='{escaped_gparted}'",
         "  loopback loop ($fxmedia)$isofile",
         (
-            "  linux (loop)/live/vmlinuz boot=live config union=overlay username=user components "
+            "  linux (loop)/live/vmlinuz boot=live config union=overlay username=user components hooks=medium "
             "noswap noeject ip= net.ifnames=0 "
             f"locales={escaped_locale} keyboard-layouts={escaped_keyboard} gl_batch "
             "toram=filesystem.squashfs findiso=$isofile"
