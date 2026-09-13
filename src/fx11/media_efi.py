@@ -13,6 +13,22 @@ from .media_theme import MediaThemePayload
 MEDIA_EFI_ISO_PATH = "/FX11/media/efiboot.img"
 MEDIA_GRUB_CONFIG_PATH = "/FX11/media/grub.cfg"
 MEDIA_EFI_SIZE_SECTORS = 32768  # 16 MiB at 512 bytes/sector
+MEDIA_GRUB_MODULES = (
+    "part_gpt",
+    "fat",
+    "iso9660",
+    "search",
+    "search_fs_file",
+    "loopback",
+    "chain",
+    "video",
+    "gfxterm",
+    "gfxterm_background",
+    "png",
+    "font",
+    "normal",
+    "configfile",
+)
 
 
 @dataclass(frozen=True)
@@ -88,7 +104,7 @@ def build_media_efi_payload(
     embedded.write_text(embedded_media_config(), encoding="utf-8")
 
     efi = work / "BOOTX64.EFI"
-    modules = "part_gpt fat iso9660 search search_file loopback chain video gfxterm gfxterm_background png font normal configfile"
+    modules = " ".join(MEDIA_GRUB_MODULES)
     proc = subprocess.run(
         [
             grub,
