@@ -74,6 +74,30 @@ Once installation is stable, continue with:
 - runtime security auditing,
 - reproducible release documentation.
 
+## Future legacy Windows branches
+
+After FX11 reaches a stable milestone, explore FX builders for user-supplied legacy Windows media.
+
+Initial targets:
+
+- Windows 7,
+- Windows XP.
+
+Purpose:
+
+- run older industrial/diagnostic software,
+- preserve applications tied to discontinued drivers/middleware,
+- support period-correct hardware,
+- provide reproducible driver/update integration without redistributing Microsoft installation media.
+
+Windows 7 is expected to be the easier first legacy target.
+
+Windows XP is a specialist target and should default to an isolated/offline posture. A specific research goal is getting a Sandy Bridge-era hybrid graphics notebook with Intel integrated graphics plus NVIDIA GeForce GT 525M as far as technically possible under XP. NVIDIA published XP drivers for the GT 525M, and Intel published XP drivers for HD Graphics 3000, but NVIDIA's Optimus switching technology officially requires Windows 7 or later. The exact laptop topology (hardware mux vs muxless, panel/output wiring, BIOS graphics modes and PCI/SUBSYS IDs) therefore determines how far this can go.
+
+See `docs/LEGACY_WINDOWS.md` for the canonical research notes and success criteria.
+
+Working product names are intentionally not final yet.
+
 ## Future sibling project — FX Linux
 
 If FX11 proves the FX build/install model works well, explore a separate sibling project named **FX Linux**.
