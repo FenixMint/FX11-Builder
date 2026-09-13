@@ -19,6 +19,10 @@ from .iso import (
 )
 
 
+MICROSOFT_REMOVABLE_BOOT_PATH = "/efi/boot/bootx64.efi"
+MICROSOFT_FALLBACK_BOOT_PATH = "/efi/microsoft/boot/bootmgfw.efi"
+
+
 @dataclass(frozen=True)
 class IsoDelta:
     added: tuple[str, ...]
@@ -165,6 +169,56 @@ def _expected_fx11_paths(manifest: dict[str, object]) -> set[str]:
     return expected
 
 
+def _verified_media_preservation_additions(
+    source_iso: Path,
+    output_iso: Path,
+    source_files: tuple[str, ...],
+    added_files: tuple[str, ...],
+    work: Path,
+) -> tuple[set[str], dict[str, dict[str, object]]]:
+    """Recognize only byte-proven media-preservation additions.
+
+    Current Microsoft UDF media can expose the signed removable-media loader as
+    /efi/boot/bootx64.efi without a duplicate bootmgfw.efi path. FX11 preserves
+    those original Microsoft bytes at bootmgfw.efi before placing development
+    GRUB at /efi/boot/bootx64.efi. The audit must not call that verified copy an
+    unexpected payload, but it must prove byte identity rather than trusting the
+    filename or build manifest.
+    """
+    expected: set[str] = set()
+    records: dict[str, dict[str, object]] = {}
+    if (
+        MICROSOFT_REMOVABLE_BOOT_PATH not in source_files
+        or MICROSOFT_FALLBACK_BOOT_PATH not in added_files
+    ):
+        return expected, records
+
+    source_loader = extract_iso_path(
+        source_iso,
+        MICROSOFT_REMOVABLE_BOOT_PATH,
+        work / "media-preservation" / "source-bootx64.efi",
+    )
+    output_loader = extract_iso_path(
+        output_iso,
+        MICROSOFT_FALLBACK_BOOT_PATH,
+        work / "media-preservation" / "output-bootmgfw.efi",
+    )
+    source_sha256 = sha256_file(source_loader)
+    output_sha256 = sha256_file(output_loader)
+    identical = source_sha256 == output_sha256
+    records[MICROSOFT_FALLBACK_BOOT_PATH] = {
+        "source_path": MICROSOFT_REMOVABLE_BOOT_PATH,
+        "output_path": MICROSOFT_FALLBACK_BOOT_PATH,
+        "source_sha256": source_sha256,
+        "output_sha256": output_sha256,
+        "byte_identical": identical,
+        "purpose": "Preserve the original signed Microsoft removable-media UEFI loader as the WinPE fallback while FX GRUB owns /efi/boot/bootx64.efi.",
+    }
+    if identical:
+        expected.add(MICROSOFT_FALLBACK_BOOT_PATH)
+    return expected, records
+
+
 def list_wim_files(wim: Path, index: int) -> tuple[str, ...]:
     # `wimlib-imagex dir` lists the selected image recursively from its root by
     # default. A bare `/` is not a positional PATH argument; modern wimlib
@@ -224,7 +278,15 @@ def build_delta_report(source_iso: Path, output_iso: Path) -> dict[str, object]:
         work = Path(temp_name)
         manifest = _read_fx11_manifest(output_iso, work)
         expected_fx11_paths = _expected_fx11_paths(manifest)
-        unexpected_added = tuple(sorted(path for path in delta.added if path not in expected_fx11_paths))
+        expected_preservation_paths, preservation_records = _verified_media_preservation_additions(
+            source_iso,
+            output_iso,
+            source_files,
+            delta.added,
+            work,
+        )
+        expected_additions = expected_fx11_paths | expected_preservation_paths
+        unexpected_added = tuple(sorted(path for path in delta.added if path not in expected_additions))
 
         source_index_raw = manifest.get("edition", {}).get("source_index", 0) if isinstance(manifest.get("edition"), dict) else 0
         try:
@@ -273,6 +335,7 @@ def build_delta_report(source_iso: Path, output_iso: Path) -> dict[str, object]:
                 "added": list(delta.added),
                 "removed": list(delta.removed),
                 "common_count": delta.common_count,
+                "expected_media_preservation_added": sorted(expected_preservation_paths),
                 "unexpected_added": list(unexpected_added),
             },
             "install_image_delta": {
@@ -286,13 +349,15 @@ def build_delta_report(source_iso: Path, output_iso: Path) -> dict[str, object]:
             "fx11_manifest": manifest,
             "injected_file_sha256": injected_hashes,
             "expected_fx11_additions": sorted(expected_fx11_paths),
+            "media_preservation": preservation_records,
             "security_interpretation": {
                 "offline_install_image_changed": bool(wim_delta.added or wim_delta.removed),
                 "unexpected_iso_additions": list(unexpected_added),
                 "note": (
                     "FX11 currently exports the selected Windows image and performs declared AppX/privacy actions later via SetupComplete. "
                     "FX Boot Manager development files are added outside install.wim and are expected ISO-level additions. "
-                    "Therefore a clean build is expected to have identical selected-image path inventory while declared FX11 files are added outside install.wim."
+                    "A Microsoft UEFI fallback copy is only classified as expected when its bytes hash identically to the original source removable-media loader. "
+                    "Therefore a clean build is expected to have identical selected-image path inventory while declared FX11 files and verified media-preservation files are added outside install.wim."
                 ),
             },
             "runtime_audit_required": [
