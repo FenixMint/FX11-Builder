@@ -7,6 +7,7 @@ import shutil
 import subprocess
 
 from .iso import BuilderError, run_checked, sha256_file
+from .media_theme import MediaThemePayload
 
 
 MEDIA_EFI_ISO_PATH = "/FX11/media/efiboot.img"
@@ -68,7 +69,11 @@ def _require_tool(command: str, package_hint: str) -> str:
     return tool
 
 
-def build_media_efi_payload(destination: Path) -> MediaEfiPayload:
+def build_media_efi_payload(
+    destination: Path,
+    *,
+    theme: MediaThemePayload | None = None,
+) -> MediaEfiPayload:
     grub = _require_tool("grub-mkstandalone", "grub-efi-amd64-bin")
     mformat = _require_tool("mformat", "mtools")
     mmd = _require_tool("mmd", "mtools")
@@ -83,11 +88,14 @@ def build_media_efi_payload(destination: Path) -> MediaEfiPayload:
     embedded.write_text(embedded_media_config(), encoding="utf-8")
 
     efi = work / "BOOTX64.EFI"
+    modules = "part_gpt fat iso9660 search search_file loopback chain video gfxterm gfxterm_background png font normal configfile"
     proc = subprocess.run(
         [
             grub,
             "-O",
             "x86_64-efi",
+            "--modules",
+            modules,
             "-o",
             str(efi),
             f"boot/grub/grub.cfg={embedded}",
@@ -125,6 +133,17 @@ def build_media_efi_payload(destination: Path) -> MediaEfiPayload:
     run_checked([mmd, "-i", str(image), "::/EFI"])
     run_checked([mmd, "-i", str(image), "::/EFI/BOOT"])
     run_checked([mcopy, "-i", str(image), "-o", str(efi), "::/EFI/BOOT/BOOTX64.EFI"])
+
+    if theme is not None:
+        run_checked([mmd, "-i", str(image), "::/EFI/FX11"])
+        run_checked([mmd, "-i", str(image), "::/EFI/FX11/theme"])
+        for source, target in (
+            (theme.theme_config, "::/EFI/FX11/theme/theme.txt"),
+            (theme.background, "::/EFI/FX11/theme/background.png"),
+            (theme.logo, "::/EFI/FX11/theme/logo.png"),
+            (theme.font, "::/EFI/FX11/theme/unicode.pf2"),
+        ):
+            run_checked([mcopy, "-i", str(image), "-o", str(source), target])
 
     if not image.is_file() or image.stat().st_size == 0:
         raise BuilderError("FX11 media EFI FAT image was not created.")
