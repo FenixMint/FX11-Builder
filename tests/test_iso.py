@@ -4,7 +4,14 @@ from types import SimpleNamespace
 import pytest
 
 from fx11 import iso as iso_module
-from fx11.iso import BuilderError, Edition, detect_media_format, find_edition
+from fx11.iso import (
+    BuilderError,
+    Edition,
+    detect_media_format,
+    ensure_windows_uefi_fallback,
+    find_edition,
+    sha256_file,
+)
 
 
 EDITIONS = (
@@ -59,3 +66,31 @@ def test_detect_media_format_defaults_non_udf_to_iso9660(monkeypatch, tmp_path: 
         lambda *args, **kwargs: SimpleNamespace(returncode=0, stdout=b"Path = windows.iso\nType = Iso\n", stderr=b""),
     )
     assert detect_media_format(source) == "iso9660"
+
+
+def test_ensure_windows_uefi_fallback_preserves_existing_bootmgfw(tmp_path: Path):
+    fallback = tmp_path / "efi" / "microsoft" / "boot" / "bootmgfw.efi"
+    fallback.parent.mkdir(parents=True)
+    fallback.write_bytes(b"existing-microsoft-loader")
+
+    result = ensure_windows_uefi_fallback(tmp_path)
+
+    assert result == fallback
+    assert result.read_bytes() == b"existing-microsoft-loader"
+
+
+def test_ensure_windows_uefi_fallback_copies_removable_loader(tmp_path: Path):
+    removable = tmp_path / "efi" / "boot" / "bootx64.efi"
+    removable.parent.mkdir(parents=True)
+    removable.write_bytes(b"signed-microsoft-boot-loader")
+
+    fallback = ensure_windows_uefi_fallback(tmp_path)
+
+    assert fallback == tmp_path / "efi" / "microsoft" / "boot" / "bootmgfw.efi"
+    assert fallback.read_bytes() == removable.read_bytes()
+    assert sha256_file(fallback) == sha256_file(removable)
+
+
+def test_ensure_windows_uefi_fallback_rejects_missing_microsoft_loader(tmp_path: Path):
+    with pytest.raises(BuilderError, match="neither"):
+        ensure_windows_uefi_fallback(tmp_path)
