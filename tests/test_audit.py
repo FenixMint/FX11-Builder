@@ -1,4 +1,4 @@
-from fx11.audit import compare_inventories, compare_wim_inventories
+from fx11.audit import compare_inventories, compare_wim_inventories, parse_7z_slt_files
 
 
 def test_compare_inventories_reports_added_removed_and_common():
@@ -40,3 +40,35 @@ def test_compare_wim_inventories_flags_unexpected_offline_change():
     delta = compare_wim_inventories(("/Windows/a.dll", "/Windows/b.dll"), ("/Windows/a.dll", "/Windows/evil.dll"))
     assert delta.added == ("/Windows/evil.dll",)
     assert delta.removed == ("/Windows/b.dll",)
+
+
+def test_parse_7z_slt_files_ignores_archive_header_and_directories():
+    listing = """Path = /tmp/Win11.iso
+Type = Udf
+Physical Size = 1234
+
+Path = sources
+Folder = +
+Attributes = D
+
+Path = sources/boot.wim
+Size = 626224597
+Folder = -
+Attributes = A
+
+Path = sources/install.wim
+Size = 7437390947
+Folder = -
+Attributes = A
+
+Path = efi/boot/bootx64.efi
+Size = 3008968
+Folder = -
+Attributes = A
+"""
+
+    assert parse_7z_slt_files(listing) == (
+        "/efi/boot/bootx64.efi",
+        "/sources/boot.wim",
+        "/sources/install.wim",
+    )
