@@ -82,7 +82,9 @@ Description:
 
 #### What does “Other OS” mean?
 
-> **Other OS** means another operating system installed alongside FX11. This can be a Linux distribution such as Ubuntu, Debian, Fedora, Linux Mint, openSUSE or another Linux system; a BSD-family system such as FreeBSD or OpenBSD; or another compatible operating system that can be installed on the computer's hardware and boot configuration.
+> **Other OS** means another operating system installed alongside FX11. This can be a Linux distribution such as **Linux Mint, Fedora, openSUSE, Rocky Linux, AlmaLinux, Debian or Arch Linux**; a BSD-family system such as **FreeBSD or OpenBSD**; or another compatible operating system that can be installed on the computer's hardware and boot configuration.
+
+FX11 documentation and user-facing examples should use the Linux distributions listed above when examples are needed. Ubuntu is intentionally not part of the FX11 example/recommendation list.
 
 > FX11 does not assume that the second operating system is Linux. It therefore does not create Linux-specific filesystems, swap, `/home`, BSD partitions or other OS-specific structures. The reserved **Other OS** area remains unallocated so that the installer of the chosen operating system can create the layout it actually needs.
 
