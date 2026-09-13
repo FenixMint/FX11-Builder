@@ -13,16 +13,21 @@ Author/project mark: `Fenix` — not `FenixMint`.
 - Theme assets:
   - `/FX11/media/theme/theme.txt`
   - `/FX11/media/theme/background.png`
+  - `/FX11/media/theme/logo.png`
   - `/FX11/media/theme/unicode.pf2`
+- Background is a dark, crop-safe mountain/water/aurora composition with a deliberately quieter left side for menu readability.
+- FX11 uses a generated transparent geometric wordmark rather than depending on an unavailable font size.
 - GRUB switches to `gfxterm` when the staged font is available and loads the FX11 theme.
+- The background uses GRUB `crop` scaling so the composition remains useful on both widescreen and more traditional firmware modes.
 - Menu labels are simplified to:
   - `FX Partition Manager`
   - `FX11 Installer`
   - `UEFI Firmware Settings`
+- Selection uses the approved green/teal accent and the theme includes a small timeout progress bar.
 - `powered by GParted` is kept as a small theme attribution instead of part of the menu item title.
 - Existing automatic GParted parameters (`gl_batch`, Polish locale and keyboard) remain in place.
 - Existing WinPE diagnostic target remains `/bootmgr.efi` and still requires physical confirmation.
-- `scripts/repack-fx11-usb-hybrid.sh` now refreshes both the GRUB config and the graphical theme so the visual change can be tested without rebuilding Windows WIM files.
+- `scripts/repack-fx11-usb-hybrid.sh` now refreshes both the GRUB config and all graphical theme assets so the visual change can be tested without rebuilding Windows WIM files.
 
 ## Important status
 
