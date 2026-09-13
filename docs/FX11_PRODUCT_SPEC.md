@@ -282,4 +282,21 @@ Planned sections:
 
 **FX11 gives the user choices instead of silently making permanent choices for them.**
 
-The base system can provide opinionated defaults, but user-facing shell, applications, Linux integration and privacy options must remain understandable, reversible and configurable after installation.
+**Your System. Your Rules.** is not only a slogan; it is a UX and implementation rule.
+
+FX11 may recommend, explain, highlight safer or more privacy-oriented choices, and provide sensible defaults. Recommendations should be clear enough that a less technical user understands why FX11 prefers one option over another. However, whenever a technically supported alternative exists, the final choice belongs to the user.
+
+This means FX11 should distinguish clearly between:
+
+- **Required** — components or actions genuinely necessary for FX11/Windows compatibility, installation integrity or supported operation.
+- **Recommended by FX11** — choices FX11 prefers for privacy, security, openness, reliability or usability, but which the user may reject.
+- **Available** — technically supported choices that FX11 does not necessarily recommend but does not hide or block.
+- **Advanced** — less common or more technical choices that remain accessible to users who want full control.
+
+A recommendation must never silently become an enforced choice merely because FX11 prefers it. Optional applications, browsers, WSL distributions, shell choices, privacy-adjacent tools and multi-OS preferences must remain explicit user decisions.
+
+When FX11 advises against an option, the interface should explain **why**, not simply remove the option. Where technically safe, the user should still be able to proceed after making an informed choice.
+
+The exceptions are genuine technical or safety constraints: destructive disk operations must require confirmation; invalid or unsupported layouts may be blocked; and mandatory compatibility components may be installed automatically when they are required for the supported FX11 environment.
+
+The base system can therefore be opinionated without becoming restrictive: **FX11 recommends; the user decides.**
