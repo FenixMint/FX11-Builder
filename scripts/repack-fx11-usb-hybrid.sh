@@ -8,8 +8,9 @@ Usage:
 
 Rebuilds an already-generated FX11 ISO with a GPT EFI System Partition view of
 the current FX11 UEFI media image. During repack it refreshes the staged FX11
-GRUB configuration, graphical theme and BOOTX64.EFI, and adds the FX11 handoff
-to the nested GParted Live environment. Windows WIM files are not rebuilt.
+GRUB configuration, graphical theme and BOOTX64.EFI, adds the FX11 handoff to
+the nested GParted Live environment, and creates a FAT-resident WinPE boot path.
+The Windows install.wim is not rebuilt.
 EOF
 }
 
@@ -74,27 +75,19 @@ BIOS="$TREE/boot/etfsboot.com"
 UEFI="$TREE/efi/microsoft/boot/efisys.bin"
 WIN_FALLBACK="$TREE/efi/microsoft/boot/bootmgfw.efi"
 REMOVABLE_EFI="$TREE/efi/boot/bootx64.efi"
+BOOT_WIM="$TREE/sources/boot.wim"
+BOOT_SDI="$TREE/boot/boot.sdi"
 MEDIA_GRUB="$TREE/FX11/media/grub.cfg"
 MEDIA_EFI_STAGED="$TREE/FX11/media/efiboot.img"
 MEDIA_THEME_DIR="$TREE/FX11/media/theme"
 GPARTED_DIR="$TREE/FX11/gparted"
 
-if [[ ! -f "$BIOS" ]]; then
-  echo "ERROR: missing BIOS El Torito image after extraction: $BIOS" >&2
-  exit 1
-fi
-if [[ ! -f "$UEFI" ]]; then
-  echo "ERROR: missing UEFI El Torito image after extraction: $UEFI" >&2
-  exit 1
-fi
-if [[ ! -s "$WIN_FALLBACK" ]]; then
-  echo "ERROR: preserved Microsoft WinPE EFI loader is missing: $WIN_FALLBACK" >&2
-  exit 1
-fi
-if [[ ! -f "$MEDIA_GRUB" ]]; then
-  echo "ERROR: missing staged FX11 media GRUB config after extraction: $MEDIA_GRUB" >&2
-  exit 1
-fi
+for required in "$BIOS" "$UEFI" "$WIN_FALLBACK" "$BOOT_WIM" "$BOOT_SDI" "$MEDIA_GRUB"; do
+  if [[ ! -s "$required" ]]; then
+    echo "ERROR: required source media file is missing: $required" >&2
+    exit 1
+  fi
+done
 
 GPARTED_INNER=$(find "$GPARTED_DIR" -maxdepth 1 -type f -name 'gparted-live-*.iso' -print -quit 2>/dev/null || true)
 if [[ -z "$GPARTED_INNER" ]]; then
@@ -126,9 +119,9 @@ if ! grep -q "90-fx11-continue" "$HOOK_REPORT"; then
 fi
 
 echo
-echo "=== 3. Refreshing FX11 media menu, theme and EFI image ==="
+echo "=== 3. Refreshing FX11 menu, theme and FAT-resident WinPE ==="
 PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}" \
-  "$PYTHON" - "$MEDIA_GRUB" "$MEDIA_THEME_DIR" "$TMP/media-efi" "$UEFI" "$REMOVABLE_EFI" "$MEDIA_EFI_STAGED" <<'PY'
+  "$PYTHON" - "$MEDIA_GRUB" "$MEDIA_THEME_DIR" "$TMP/media-efi" "$UEFI" "$REMOVABLE_EFI" "$BOOT_WIM" "$BOOT_SDI" <<'PY'
 from pathlib import Path
 import shutil
 import sys
@@ -140,27 +133,34 @@ from fx11.media_theme import build_media_theme
 grub_path = Path(sys.argv[1])
 theme_dir = Path(sys.argv[2])
 efi_work = Path(sys.argv[3])
-uefi_path = Path(sys.argv[4])
+original_uefi = Path(sys.argv[4])
 removable_path = Path(sys.argv[5])
-staged_path = Path(sys.argv[6])
+boot_wim = Path(sys.argv[6])
+boot_sdi = Path(sys.argv[7])
 
 grub_path.write_text(build_media_grub_config().grub_config, encoding="utf-8")
 theme = build_media_theme(theme_dir)
-efi = build_media_efi_payload(efi_work, theme=theme)
+efi = build_media_efi_payload(
+    efi_work,
+    theme=theme,
+    windows_efi_image=original_uefi,
+    boot_wim=boot_wim,
+    boot_sdi=boot_sdi,
+)
 
-uefi_path.parent.mkdir(parents=True, exist_ok=True)
+# Replace the El Torito/GPT EFI image with the expanded FAT image that contains
+# both FX GRUB and a complete local WinPE boot path. Keep the outer removable
+# fallback BOOTX64.EFI aligned with the freshly built FX GRUB binary.
+shutil.copy2(efi.image, original_uefi)
 removable_path.parent.mkdir(parents=True, exist_ok=True)
-staged_path.parent.mkdir(parents=True, exist_ok=True)
-shutil.copy2(efi.image, uefi_path)
 shutil.copy2(efi.efi_binary, removable_path)
-shutil.copy2(efi.image, staged_path)
 
 print(f"Updated menu : {grub_path}")
 print(f"Theme config : {theme.theme_config}")
 print(f"Background   : {theme.background}")
 print(f"FX11 logo    : {theme.logo}")
 print(f"GRUB font    : {theme.font}")
-print(f"EFI image    : {uefi_path}")
+print(f"EFI/WinPE FAT: {original_uefi} ({original_uefi.stat().st_size // (1024 * 1024)} MiB)")
 print(f"BOOTX64.EFI  : {removable_path}")
 PY
 
@@ -177,15 +177,26 @@ done
 
 for efi_asset in \
   ::/EFI/BOOT/BOOTX64.EFI \
+  ::/EFI/Microsoft/Boot/bootmgfw.efi \
   ::/EFI/FX11/theme/theme.txt \
   ::/EFI/FX11/theme/background.png \
   ::/EFI/FX11/theme/logo.png \
-  ::/EFI/FX11/theme/unicode.pf2; do
+  ::/EFI/FX11/theme/unicode.pf2 \
+  ::/EFI/FX11/winpe-ready \
+  ::/boot/boot.sdi \
+  ::/sources/boot.wim; do
   if ! mdir -i "$UEFI" "$efi_asset" >/dev/null 2>&1; then
-    echo "ERROR: refreshed EFI image is missing $efi_asset" >&2
+    echo "ERROR: refreshed EFI/WinPE FAT image is missing $efi_asset" >&2
     exit 1
   fi
 done
+
+# The historical 16 MiB staged image in /FX11/media is not used by test6.
+# Leave it untouched to avoid duplicating the large FAT-resident boot.wim in
+# the ISO filesystem; the actual El Torito/GPT image above is authoritative.
+if [[ -f "$MEDIA_EFI_STAGED" ]]; then
+  echo "NOTE: keeping legacy staged efiboot.img unchanged; test6 boots from $UEFI"
+fi
 
 echo
 echo "=== 4. Rebuilding with GPT EFI System Partition metadata ==="
@@ -235,8 +246,16 @@ if ! grep -q "hooks=medium" "$MEDIA_GRUB"; then
   echo "ERROR: refreshed media GRUB config does not enable the GParted handoff hook." >&2
   exit 1
 fi
+if ! grep -q "insmod gfxmenu" "$MEDIA_GRUB"; then
+  echo "ERROR: refreshed media GRUB config does not load gfxmenu." >&2
+  exit 1
+fi
+if ! grep -q "winpe-ready" "$MEDIA_GRUB"; then
+  echo "ERROR: refreshed media GRUB config does not select the FAT-resident WinPE payload." >&2
+  exit 1
+fi
 if ! grep -q "chainloader .*bootmgfw.efi" "$MEDIA_GRUB"; then
-  echo "ERROR: refreshed media GRUB config does not target the preserved Microsoft EFI loader." >&2
+  echo "ERROR: refreshed media GRUB config does not target Microsoft bootmgfw.efi on the WinPE FAT volume." >&2
   exit 1
 fi
 if ! grep -q "background_image" "$MEDIA_GRUB"; then
