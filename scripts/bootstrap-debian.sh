@@ -14,6 +14,7 @@ sudo apt-get install -y \
   wimtools \
   xorriso \
   grub-efi-amd64-bin \
+  mtools \
   qemu-system-x86 \
   ovmf
 
