@@ -14,6 +14,7 @@ from .bootmanager import build_unsigned_payload
 from .iso import BuilderError, Edition, IsoInspection, inspect_iso, run_checked, sha256_file
 from .profiles import get_profile, validate_profile
 from .provisioning import write_provisioning_files
+from .winpe import CustomizedBootWim, customize_boot_wim
 
 
 @dataclass(frozen=True)
@@ -85,6 +86,7 @@ def _manifest(
     profile_ids: list[str],
     injected_hashes: dict[str, str],
     boot_hashes: dict[str, str],
+    winpe: CustomizedBootWim,
 ) -> dict[str, object]:
     return {
         "project": "FX11 Builder",
@@ -123,6 +125,14 @@ def _manifest(
                 "purpose": "FX Boot Manager visual theme",
             },
         },
+        "winpe": {
+            "boot_wim_image_index": winpe.image_index,
+            "source_boot_wim_sha256": winpe.source_sha256,
+            "fx11_boot_wim_sha256": winpe.output_sha256,
+            "startup": "winpeshl.ini -> cmd.exe /c Startnet.cmd -> wpeinit -> X:\\FX11\\fx11-launch.cmd",
+            "current_frontend": "non-destructive FX Partition Manager bootstrap shell",
+            "stock_setup_fallback": True,
+        },
         "boot_manager": {
             "name": "FX Boot Manager",
             "implementation": "GRUB x86_64 UEFI standalone development payload",
@@ -134,7 +144,7 @@ def _manifest(
             "edition": "selected image exported with wimlib to a single-image install.wim",
             "debloat": "Windows SetupComplete removes declared provisioned AppX packages using Windows servicing APIs",
             "privacy": "machine/default-user policy applied during SetupComplete",
-            "iso_boot": "original ISO boot metadata replayed by xorriso",
+            "iso_boot": "original ISO boot metadata replayed by xorriso; boot.wim boot image is customized to start FX11 first",
             "installed_boot": "FX Boot Manager development payload is embedded for later ESP installation; FX11 chainloads Windows Boot Manager",
             "integrity": "SetupComplete verifies the SHA-256 of FX11.ps1 before executing it",
         },
@@ -205,6 +215,7 @@ def build_iso(
     with tempfile.TemporaryDirectory(prefix="fx11-build-") as temporary:
         root = Path(temporary)
         selected_wim = export_selected_edition(inspection, edition, root / "install.wim")
+        customized_boot = customize_boot_wim(inspection.source, root / "winpe")
         setup_complete, powershell, injected_hashes = write_provisioning_files(root, profile_ids)
         boot_payload = build_unsigned_payload(root / "fxboot")
         boot_hashes = {
@@ -212,13 +223,21 @@ def build_iso(
             "grub.cfg": sha256_file(boot_payload.grub_config),
             "theme.txt": sha256_file(boot_payload.theme_config),
         }
-        manifest_data = _manifest(inspection, edition, profile_ids, injected_hashes, boot_hashes)
+        manifest_data = _manifest(
+            inspection,
+            edition,
+            profile_ids,
+            injected_hashes,
+            boot_hashes,
+            customized_boot,
+        )
         manifest = root / "FX11-manifest.json"
         manifest.write_text(json.dumps(manifest_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
         partial = output_iso.with_name(output_iso.name + ".building")
         partial.unlink(missing_ok=True)
         maps = [
+            (customized_boot.path, "/sources/boot.wim"),
             (selected_wim, "/sources/install.wim"),
             (setup_complete, "/sources/$OEM$/$$/Setup/Scripts/SetupComplete.cmd"),
             (powershell, "/sources/$OEM$/$$/Setup/Scripts/FX11.ps1"),
