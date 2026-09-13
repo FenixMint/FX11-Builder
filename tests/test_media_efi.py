@@ -10,6 +10,7 @@ from fx11.media_efi import (
     embedded_media_config,
     parse_efi_el_torito_path,
 )
+from fx11.media_theme import build_media_theme
 
 
 def test_embedded_media_config_hands_off_to_staged_fx_grub_config():
@@ -40,21 +41,29 @@ def test_reject_missing_efi_path():
 
 
 @pytest.mark.skipif(
-    not all(shutil.which(tool) for tool in ("grub-mkstandalone", "mformat", "mmd", "mcopy")),
+    not all(shutil.which(tool) for tool in ("grub-mkstandalone", "mformat", "mmd", "mcopy", "mdir")),
     reason="GRUB/mtools not installed on this test host",
 )
-def test_build_media_efi_payload_contains_bootx64(tmp_path):
-    payload = build_media_efi_payload(tmp_path / "media-efi")
+def test_build_media_efi_payload_contains_bootx64_and_theme(tmp_path):
+    theme = build_media_theme(tmp_path / "theme")
+    payload = build_media_efi_payload(tmp_path / "media-efi", theme=theme)
 
     assert payload.image.is_file()
     assert payload.image.stat().st_size == 16 * 1024 * 1024
     assert payload.efi_binary.is_file()
     assert len(payload.sha256) == 64
 
-    proc = subprocess.run(
-        ["mdir", "-i", str(payload.image), "::/EFI/BOOT/BOOTX64.EFI"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        check=False,
-    )
-    assert proc.returncode == 0, proc.stderr.decode("utf-8", errors="replace")
+    for member in (
+        "::/EFI/BOOT/BOOTX64.EFI",
+        "::/EFI/FX11/theme/theme.txt",
+        "::/EFI/FX11/theme/background.png",
+        "::/EFI/FX11/theme/logo.png",
+        "::/EFI/FX11/theme/unicode.pf2",
+    ):
+        proc = subprocess.run(
+            ["mdir", "-i", str(payload.image), member],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        assert proc.returncode == 0, proc.stderr.decode("utf-8", errors="replace")
