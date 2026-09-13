@@ -67,7 +67,7 @@ def build_media_grub_config(
         "insmod fat",
         "insmod iso9660",
         "insmod search",
-        "insmod search_file",
+        "insmod search_fs_file",
         "insmod loopback",
         "insmod chain",
         "insmod video",
