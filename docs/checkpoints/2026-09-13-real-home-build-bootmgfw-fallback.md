@@ -22,27 +22,45 @@ No FX11 output ISO was produced, so subsequent `validate`, `audit`, and `test` c
 
 ## Root cause
 
-The UDF repack path introduced an unnecessary dependency on `/efi/microsoft/boot/bootmgfw.efi` after changing `/efi/boot/bootx64.efi` into the FX GRUB filesystem fallback.
+The UDF repack path assumed `/efi/microsoft/boot/bootmgfw.efi` was exposed as a normal file in the Microsoft UDF tree. The tested 25H2 source does not expose that file there, but it does expose the signed removable-media Windows loader at `/efi/boot/bootx64.efi`.
 
-The source media is already known to contain Microsoft's `/efi/boot/bootx64.efi`. For optical El Torito boot, FX GRUB is supplied through the replacement EFI El Torito image (`/efi/microsoft/boot/efisys.bin`). Therefore the clean ISO architecture is:
+FX11 currently wants both:
+- the removable-media path `/efi/boot/bootx64.efi` to contain FX GRUB, for filesystem/removable-media fallback,
+- a separate Microsoft UEFI loader path for the explicit WinPE fallback entry.
 
-- EFI El Torito image -> FX GRUB
-- normal ISO filesystem `/efi/boot/bootx64.efi` -> keep original Microsoft loader unchanged
-- FX GRUB WinPE fallback -> chainload the preserved `/efi/boot/bootx64.efi`
+## Implemented fix
 
-This avoids requiring `bootmgfw.efi` and avoids relocating a Microsoft loader.
+`src/fx11/iso.py` now provides `ensure_windows_uefi_fallback(media_tree)`.
 
-## Important distinction
+During extraction of UDF Microsoft media:
+1. if `/efi/microsoft/boot/bootmgfw.efi` already exists, it is retained unchanged;
+2. otherwise the original Microsoft `/efi/boot/bootx64.efi` is copied byte-for-byte to `/efi/microsoft/boot/bootmgfw.efi`;
+3. the copy is SHA-256 checked against the original before the build continues;
+4. only after that preservation step may the Builder replace `/efi/boot/bootx64.efi` with the FX GRUB loader.
 
-This decision is for the bootable ISO path. A future USB-media writer may intentionally install FX GRUB at the removable-media path `/EFI/BOOT/BOOTX64.EFI`; that is a separate media-generation problem and must not force the ISO path to overwrite Microsoft's filesystem loader.
+This keeps an original Microsoft-signed loader available for the WinPE fallback without modifying its contents. The resulting chainload behavior still requires OVMF/QEMU validation.
+
+Tests were added for:
+- preserving an existing `bootmgfw.efi`,
+- creating the fallback from `bootx64.efi`,
+- byte/SHA equality of the preserved copy,
+- rejecting media with neither Microsoft UEFI loader path.
+
+Implementation commits:
+- `c92432fdcaf6d428269c4872afce4667f79c543e` — preserve Windows UEFI fallback on UDF media
+- `b37ee7107290a20a0f5ad970560881c8556e69c1` — unit tests for fallback preservation
+
+## Superseded implementation idea
+
+An earlier note in this checkpoint proposed leaving Microsoft's `/efi/boot/bootx64.efi` in place and using FX GRUB only through the El Torito image. That remains a possible ISO-only architecture, but it is **not the implementation currently committed**. The current implementation preserves the Microsoft loader by copying it to the canonical Microsoft boot-manager path, then lets FX GRUB own the removable-media path. This also keeps the door open for later USB media support.
 
 ## Status
 
-- Real Home build: **FAILED at UEFI fallback staging**
+- Real Home build attempt #1: **FAILED at UEFI fallback staging**
 - WIM export/integrity stage: **observed working**
 - WinPE customization: **observed working**
-- ISO generation: **not reached**
+- fallback preservation fix: **implemented, not yet validated on the real source build**
+- ISO generation: **not yet observed on the real source**
 - QEMU/OVMF boot: **not reached**
-- fix: retain Microsoft `/efi/boot/bootx64.efi` on UDF ISO builds and use it as the explicit WinPE fallback
 
 Do not claim the real 25H2 Home ISO build works until the corrected build completes and the resulting ISO passes validation and OVMF/QEMU boot tests.
