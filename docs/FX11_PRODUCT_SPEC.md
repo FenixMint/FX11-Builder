@@ -64,14 +64,20 @@ No optional third-party application is installed silently without user consent.
 - **7-Zip** — lightweight open-source archive utility with excellent 7z support.
 - **PeaZip** — graphical archive manager with broad format support and additional archive/security tools.
 
-### Drivers
+### Drivers and important system components
 
-- **Driver Booster** — optional driver discovery/update utility.
-- This item must be clearly marked as optional and should never replace Windows Update or OEM driver channels automatically.
+- **Driver Booster** — optional driver discovery/update utility that can help the user find current device drivers and important driver-related components after installation.
+- FX11 First Run should explain that Driver Booster may be useful especially on hardware where Windows Update does not immediately provide the newest or most complete driver set.
+- Driver Booster remains optional and must not silently override Windows Update or OEM driver channels.
+- **Microsoft Visual C++ Redistributable x86** — install the latest supported Microsoft Visual C++ runtime for 32-bit applications.
+- **Microsoft Visual C++ Redistributable x64** — install the latest supported Microsoft Visual C++ runtime for 64-bit applications.
+- Both Visual C++ runtime architectures should be available even on 64-bit Windows because many applications remain 32-bit and require the x86 runtime.
+- VC++ Redistributables are treated as compatibility/runtime components rather than ordinary optional desktop applications.
 
 ## Application installation policy
 
 - FX11 should resolve/download the latest stable release from an official vendor source or trusted package source at the time of installation.
+- Microsoft Visual C++ Redistributables must be obtained from Microsoft or an official Microsoft package source.
 - Installers are not permanently embedded in the base ISO unless a later offline profile explicitly requests this.
 - The catalogue stores metadata, source URL/resolver, checksum/signature policy, silent-install arguments and uninstall information.
 - Failed downloads must not block first login.
