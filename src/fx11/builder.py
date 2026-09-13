@@ -12,7 +12,15 @@ import tempfile
 from . import __version__
 from .bootmanager import build_unsigned_payload
 from .gparted import VerifiedGPartedLive, verify_gparted_live
-from .iso import BuilderError, Edition, IsoInspection, inspect_iso, run_checked, sha256_file
+from .iso import (
+    BuilderError,
+    Edition,
+    IsoInspection,
+    extract_media_tree,
+    inspect_iso,
+    run_checked,
+    sha256_file,
+)
 from .media_boot import build_media_grub_config
 from .media_efi import (
     MEDIA_EFI_ISO_PATH,
@@ -23,6 +31,7 @@ from .media_efi import (
 from .profiles import get_profile, validate_profile
 from .provisioning import write_provisioning_files
 from .winpe import CustomizedBootWim, customize_boot_wim
+from .winpe_file import customize_boot_wim_file
 
 
 @dataclass(frozen=True)
@@ -85,6 +94,7 @@ def _build_tools() -> dict[str, object]:
         "python": {"path": sys.executable, "version": sys.version.split()[0]},
         "wimlib-imagex": _tool_record("wimlib-imagex", ["--version"]),
         "xorriso": _tool_record("xorriso", ["-version"]),
+        "7z": _tool_record("7z", ["i"]),
         "grub-mkstandalone": _tool_record("grub-mkstandalone", ["--version"]),
         "mformat": _tool_record("mformat", ["-V"]),
     }
@@ -102,12 +112,26 @@ def _manifest(
     media_efi: MediaEfiPayload | None,
     source_efi_path: str | None,
 ) -> dict[str, object]:
+    if inspection.media_format == "udf":
+        iso_boot_strategy = (
+            "UDF source tree extracted with 7-Zip and rebuilt as ISO9660 level 3 with explicit Microsoft BIOS boot image and FX GRUB UEFI El Torito image"
+            if media_efi is not None
+            else "UDF source tree extracted with 7-Zip and rebuilt as ISO9660 level 3 with explicit Microsoft boot images"
+        )
+    else:
+        iso_boot_strategy = (
+            "source boot metadata replayed by xorriso with the source file-backed EFI El Torito image replaced by FX GRUB; BIOS boot remains source-derived"
+            if media_efi is not None
+            else "original ISO boot metadata replayed by xorriso; boot.wim boot image is customized to start FX11 first"
+        )
+
     manifest: dict[str, object] = {
         "project": "FX11 Builder",
         "builder_version": __version__,
         "build_utc": datetime.now(timezone.utc).isoformat(),
         "source_iso": inspection.source.name,
         "source_sha256": inspection.source_sha256,
+        "source_media_format": inspection.media_format,
         "source_install_format": inspection.install_format,
         "edition": {
             "source_index": edition.index,
@@ -154,7 +178,7 @@ def _manifest(
             "gparted_payload_staged": gparted is not None,
             "gparted_media_grub_staged": media_grub_sha256 is not None,
             "gparted_boot_selector_status": (
-                "FX GRUB replaces the file-backed UEFI El Torito image and defaults to GParted; WinPE remains an explicit fallback"
+                "FX GRUB is the UEFI media entry and defaults to GParted; Microsoft bootmgfw.efi remains the explicit WinPE fallback"
                 if media_efi is not None
                 else "GParted media boot not enabled for this build"
             ),
@@ -171,11 +195,7 @@ def _manifest(
             "deployment": "FX11 WinPE applies install.wim index 1 directly to the partition prepared by FX Partition Manager",
             "debloat": "FX11 provisioning scripts are staged into Windows Setup Scripts after image application; real-hardware/OOBE execution still requires validation",
             "privacy": "machine/default-user policy is applied by the staged FX11 provisioning script",
-            "iso_boot": (
-                "source boot metadata replayed by xorriso with the source file-backed EFI El Torito image replaced by FX GRUB; BIOS boot remains source-derived"
-                if media_efi is not None
-                else "original ISO boot metadata replayed by xorriso; boot.wim boot image is customized to start FX11 first"
-            ),
+            "iso_boot": iso_boot_strategy,
             "installed_boot": "BCDBoot creates reliable Windows UEFI boot files; FX Boot Manager files are staged on the ESP for later firmware-default activation",
             "integrity": "SetupComplete verifies the SHA-256 of FX11.ps1 before executing it",
         },
@@ -224,8 +244,9 @@ def _manifest(
                     "source_efi_el_torito_path": source_efi_path,
                     "replacement_image_iso_path": MEDIA_EFI_ISO_PATH,
                     "replacement_image_sha256": media_efi.sha256,
+                    "filesystem_fallback": "/efi/boot/bootx64.efi also contains the FX GRUB loader",
                     "default_entry": "FX Partition Manager — powered by GParted",
-                    "fallback": "FX11 Installer / WinPE fallback",
+                    "fallback": "FX11 Installer / WinPE fallback via /efi/microsoft/boot/bootmgfw.efi",
                 }
 
     return manifest
@@ -300,6 +321,36 @@ def validate_output_iso(
         _verify_efi_replacement(iso, expected_efi_path, expected_efi_sha256)
 
 
+def _stage_tree_file(tree: Path, local: Path, iso_path: str) -> None:
+    target = tree / iso_path.lstrip("/")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(local, target)
+
+
+def _build_repacked_iso(tree: Path, destination: Path) -> None:
+    bios = tree / "boot" / "etfsboot.com"
+    uefi = tree / "efi" / "microsoft" / "boot" / "efisys.bin"
+    if not bios.is_file() or not uefi.is_file():
+        raise BuilderError("Repacked Microsoft media is missing BIOS or UEFI boot images.")
+    run_checked([
+        "xorriso",
+        "-as", "mkisofs",
+        "-iso-level", "3",
+        "-J",
+        "-joliet-long",
+        "-V", "FX11",
+        "-c", "boot/boot.cat",
+        "-b", "boot/etfsboot.com",
+        "-no-emul-boot",
+        "-boot-load-size", "8",
+        "-eltorito-alt-boot",
+        "-e", "efi/microsoft/boot/efisys.bin",
+        "-no-emul-boot",
+        "-o", str(destination),
+        str(tree),
+    ])
+
+
 def build_iso(
     inspection: IsoInspection,
     edition: Edition,
@@ -328,8 +379,16 @@ def build_iso(
 
     with tempfile.TemporaryDirectory(prefix="fx11-build-") as temporary:
         root = Path(temporary)
+        media_tree: Path | None = None
+        if inspection.media_format == "udf":
+            media_tree = extract_media_tree(inspection.source, root / "media-tree")
+
         selected_wim = export_selected_edition(inspection, edition, root / "install.wim")
-        customized_boot = customize_boot_wim(inspection.source, root / "winpe")
+        if media_tree is not None:
+            customized_boot = customize_boot_wim_file(media_tree / "sources" / "boot.wim", root / "winpe")
+        else:
+            customized_boot = customize_boot_wim(inspection.source, root / "winpe")
+
         setup_complete, powershell, injected_hashes = write_provisioning_files(root, profile_ids)
         boot_payload = build_unsigned_payload(root / "fxboot")
         boot_hashes = {
@@ -347,7 +406,11 @@ def build_iso(
             media_grub = root / "media-grub.cfg"
             media_grub.write_text(media_boot.grub_config, encoding="utf-8")
             media_grub_sha256 = sha256_file(media_grub)
-            source_efi_path = discover_efi_el_torito_path(inspection.source)
+            source_efi_path = (
+                "/efi/microsoft/boot/efisys.bin"
+                if media_tree is not None
+                else discover_efi_el_torito_path(inspection.source)
+            )
             media_efi = build_media_efi_payload(root / "media-efi")
 
         manifest_data = _manifest(
@@ -390,23 +453,35 @@ def build_iso(
             maps.append((media_efi.image, source_efi_path))
             required_extra_list.append(MEDIA_EFI_ISO_PATH)
 
-        command = [
-            "xorriso",
-            "-indev", str(inspection.source),
-            "-outdev", str(partial),
-            "-overwrite", "on",
-        ]
-        if inspection.install_format == "esd":
-            command += ["-rm", "/sources/install.esd"]
-        for local, target in maps:
-            command += ["-map", str(local), target]
-        # Replay happens after all mappings. xorriso then reuses source BIOS/system-area
-        # boot metadata while the replaced file-backed EFI image becomes the new
-        # UEFI El Torito boot image.
-        command += ["-boot_image", "any", "replay", "-commit", "-end"]
-
         try:
-            run_checked(command)
+            if media_tree is not None:
+                if inspection.install_format == "esd":
+                    (media_tree / "sources" / "install.esd").unlink(missing_ok=True)
+                for local, target in maps:
+                    _stage_tree_file(media_tree, local, target)
+                if media_efi is not None:
+                    windows_fallback = media_tree / "efi" / "microsoft" / "boot" / "bootmgfw.efi"
+                    if not windows_fallback.is_file():
+                        raise BuilderError(
+                            "Microsoft bootmgfw.efi is missing from the UDF source; cannot keep the WinPE fallback while FX GRUB owns /efi/boot/bootx64.efi."
+                        )
+                    _stage_tree_file(media_tree, media_efi.efi_binary, "/efi/boot/bootx64.efi")
+                    required_extra_list.append("/efi/boot/bootx64.efi")
+                _build_repacked_iso(media_tree, partial)
+            else:
+                command = [
+                    "xorriso",
+                    "-indev", str(inspection.source),
+                    "-outdev", str(partial),
+                    "-overwrite", "on",
+                ]
+                if inspection.install_format == "esd":
+                    command += ["-rm", "/sources/install.esd"]
+                for local, target in maps:
+                    command += ["-map", str(local), target]
+                command += ["-boot_image", "any", "replay", "-commit", "-end"]
+                run_checked(command)
+
             validate_output_iso(
                 partial,
                 extra_required=tuple(required_extra_list),
