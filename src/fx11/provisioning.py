@@ -1,20 +1,9 @@
 from __future__ import annotations
 
+from hashlib import sha256
 from pathlib import Path
 
 from .profiles import appx_targets
-
-
-SETUP_COMPLETE = r'''@echo off
-setlocal
-set "LOGDIR=%ProgramData%\FX11"
-if not exist "%LOGDIR%" mkdir "%LOGDIR%"
-echo [%DATE% %TIME%] FX11 Builder SetupComplete starting>>"%LOGDIR%\setupcomplete.log"
-powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%WINDIR%\Setup\Scripts\FX11.ps1" >>"%LOGDIR%\setupcomplete.log" 2>&1
-set "RC=%ERRORLEVEL%"
-echo [%DATE% %TIME%] FX11 PowerShell exit code %RC%>>"%LOGDIR%\setupcomplete.log"
-exit /b 0
-'''
 
 
 PRIVACY_SCRIPT = r'''
@@ -61,6 +50,10 @@ if (Test-Path $defaultHive) {
 
 def _ps_quote(value: str) -> str:
     return "'" + value.replace("'", "''") + "'"
+
+
+def _sha256_bytes(data: bytes) -> str:
+    return sha256(data).hexdigest()
 
 
 def powershell_script(profile_ids: list[str]) -> str:
@@ -141,11 +134,40 @@ exit 0
     return "\n".join(parts)
 
 
-def write_provisioning_files(root: Path, profile_ids: list[str]) -> tuple[Path, Path]:
+def setup_complete_script(expected_ps1_sha256: str) -> str:
+    return rf'''@echo off
+setlocal
+set "LOGDIR=%ProgramData%\FX11"
+if not exist "%LOGDIR%" mkdir "%LOGDIR%"
+set "FX11PS=%WINDIR%\Setup\Scripts\FX11.ps1"
+set "EXPECTED={expected_ps1_sha256.lower()}"
+echo [%DATE% %TIME%] FX11 Builder SetupComplete starting>>"%LOGDIR%\setupcomplete.log"
+for /f "usebackq delims=" %%H in (`powershell.exe -NoLogo -NoProfile -NonInteractive -Command "(Get-FileHash -Algorithm SHA256 -LiteralPath $env:WINDIR'\Setup\Scripts\FX11.ps1').Hash.ToLowerInvariant()"`) do set "ACTUAL=%%H"
+if /I not "%ACTUAL%"=="%EXPECTED%" (
+  echo [%DATE% %TIME%] SECURITY ERROR: FX11.ps1 SHA256 mismatch. Expected %EXPECTED%, got %ACTUAL%>>"%LOGDIR%\setupcomplete.log"
+  exit /b 10
+)
+echo [%DATE% %TIME%] FX11.ps1 integrity verified: %ACTUAL%>>"%LOGDIR%\setupcomplete.log"
+powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%FX11PS%" >>"%LOGDIR%\setupcomplete.log" 2>&1
+set "RC=%ERRORLEVEL%"
+echo [%DATE% %TIME%] FX11 PowerShell exit code %RC%>>"%LOGDIR%\setupcomplete.log"
+exit /b %RC%
+'''
+
+
+def write_provisioning_files(root: Path, profile_ids: list[str]) -> tuple[Path, Path, dict[str, str]]:
     scripts = root / "scripts"
     scripts.mkdir(parents=True, exist_ok=True)
     setup = scripts / "SetupComplete.cmd"
     ps1 = scripts / "FX11.ps1"
-    setup.write_text(SETUP_COMPLETE, encoding="utf-8", newline="\r\n")
-    ps1.write_text(powershell_script(profile_ids), encoding="utf-8-sig", newline="\r\n")
-    return setup, ps1
+
+    ps1_text = powershell_script(profile_ids)
+    ps1.write_text(ps1_text, encoding="utf-8-sig", newline="\r\n")
+    ps1_hash = _sha256_bytes(ps1.read_bytes())
+
+    setup.write_text(setup_complete_script(ps1_hash), encoding="utf-8", newline="\r\n")
+    hashes = {
+        "SetupComplete.cmd": _sha256_bytes(setup.read_bytes()),
+        "FX11.ps1": ps1_hash,
+    }
+    return setup, ps1, hashes
