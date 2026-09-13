@@ -18,12 +18,13 @@ def test_media_boot_defaults_to_gparted_partition_manager():
     assert "findiso=$isofile" in text
 
 
-def test_media_boot_keeps_winpe_fallback():
+def test_media_boot_keeps_winpe_fallback_without_looping_to_fx_grub():
     text = build_media_grub_config().grub_config
 
     assert "FX11 Installer / WinPE fallback" in text
-    assert "/efi/boot/bootx64.efi" in text
+    assert "/efi/microsoft/boot/bootmgfw.efi" in text
     assert "chainloader" in text
+    assert "chainloader ($winmedia)/efi/boot/bootx64.efi" not in text
 
 
 def test_media_boot_rejects_negative_timeout():
