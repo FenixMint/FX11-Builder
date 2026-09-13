@@ -18,7 +18,7 @@ DEFAULT_PROFILES = ["tiny11-safe", "privacy-balanced"]
 
 def command_doctor() -> int:
     report = host_report()
-    print("OS11vLIN Host Check")
+    print("FX11 Builder Host Check")
     print(f"Distribution : {report['distribution']}")
     print(f"Architecture : {report['architecture']}")
     print(f"Kernel       : {report['kernel']}")
@@ -39,7 +39,7 @@ def command_profiles() -> int:
 def command_plan(profile_ids: list[str]) -> int:
     if not profile_ids:
         profile_ids = DEFAULT_PROFILES.copy()
-    print("OS11vLIN BUILD PLAN\n")
+    print("FX11 BUILD PLAN\n")
     for profile_id in profile_ids:
         profile = get_profile(profile_id)
         validate_profile(profile)
@@ -110,7 +110,7 @@ def command_build(args: argparse.Namespace) -> int:
             return 0
         output = args.output
         if output is None:
-            output = Path.cwd() / f"{inspection.source.stem}-OS11vLIN-{_slug(edition.name)}.iso"
+            output = Path.cwd() / f"{inspection.source.stem}-FX11-{_slug(edition.name)}.iso"
         print(f"\nBuilding: {output}")
         result = build_iso(inspection, edition, output, profiles, force=args.force)
         print("\nBUILD VALID")
@@ -141,7 +141,7 @@ def command_test(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="os11vlin", description="Build conservative tiny11-style Windows 11 images on Linux")
+    parser = argparse.ArgumentParser(prog="fx11", description="Build custom Windows 11 installation images on Linux")
     parser.add_argument("--version", action="version", version=__version__)
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -157,14 +157,14 @@ def build_parser() -> argparse.ArgumentParser:
     build = sub.add_parser("build", help="Build a selected Windows 11 edition")
     build.add_argument("source", type=Path, help="Original Microsoft Windows 11 ISO")
     select = build.add_mutually_exclusive_group()
-    select.add_argument("--index", type=int, help="WIM/ESD image index from 'os11vlin inspect'")
+    select.add_argument("--index", type=int, help="WIM/ESD image index from 'fx11 inspect'")
     select.add_argument("--edition", help="Edition name or EditionID, e.g. 'Windows 11 Pro' or Professional")
     build.add_argument("-o", "--output", type=Path)
     build.add_argument("--profile", action="append", default=[], dest="profiles", choices=sorted(PROFILES))
     build.add_argument("--dry-run", action="store_true")
     build.add_argument("--force", action="store_true")
 
-    validate = sub.add_parser("validate", help="Validate a generated OS11vLIN ISO")
+    validate = sub.add_parser("validate", help="Validate a generated FX11 ISO")
     validate.add_argument("iso", type=Path)
 
     test = sub.add_parser("test", help="Boot an ISO in a temporary QEMU VM")

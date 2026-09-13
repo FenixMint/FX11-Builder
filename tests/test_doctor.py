@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from os11vlin.doctor import detect_distribution
+from fx11.doctor import detect_distribution
 
 
 def test_detect_distribution(tmp_path: Path):

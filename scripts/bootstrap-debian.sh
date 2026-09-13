@@ -21,6 +21,6 @@ python3 -m venv .venv
 python -m pip install --upgrade pip
 python -m pip install -e '.[dev]'
 
-printf '\nOS11vLIN installed in %s/.venv\n' "$PWD"
+printf '\nFX11 Builder installed in %s/.venv\n' "$PWD"
 printf 'Activate with: . .venv/bin/activate\n'
-printf 'Then run: os11vlin doctor\n'
+printf 'Then run: fx11 doctor\n'

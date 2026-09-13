@@ -1,10 +1,10 @@
-# OS11vLIN
+# FX11 Builder
 
-OS11vLIN is a Linux-native Windows 11 ISO builder inspired by the **tiny11maker** approach, but designed around a conservative and serviceable V1 profile.
+FX11 Builder is a Linux-native Windows 11 ISO builder inspired by the tiny11maker approach, but designed around a conservative, serviceable build strategy.
 
 It runs on Linux Mint, LMDE and Debian, keeps the original ISO untouched, lets you choose the exact Windows image contained in the ISO (Home, Pro, Pro N, Education, Enterprise, etc.), exports only that image into the new ISO, and applies `tiny11-safe + privacy-balanced` automatically during Windows Setup.
 
-## What V1 does
+## What it does
 
 - checks the Linux build host,
 - reads Microsoft Windows 11 ISO files directly,
@@ -23,211 +23,137 @@ It runs on Linux Mint, LMDE and Debian, keeps the original ISO untouched, lets y
 
 ## Why application removal happens during SetupComplete
 
-`wimlib` is excellent for reading, exporting and modifying WIM file contents, but it is not a full replacement for Windows DISM servicing. OS11vLIN therefore does not blindly delete Windows component directories from a WIM.
+`wimlib` is excellent for reading, exporting and modifying WIM file contents, but it is not a full replacement for Windows DISM servicing. FX11 Builder therefore does not blindly delete Windows component directories from a WIM.
 
-Instead, the Linux builder prepares the image and injects a `SetupComplete` script. During Windows installation, Windows itself uses `Remove-AppxProvisionedPackage` and `Remove-AppxPackage` to remove declared applications. This keeps servicing much safer than direct filesystem deletion.
+Instead, the Linux builder prepares the image and injects a `SetupComplete` script. During Windows installation, Windows itself uses `Remove-AppxProvisionedPackage` and `Remove-AppxPackage` to remove declared applications. This keeps servicing safer than direct filesystem deletion.
 
 ## Installation on Mint / LMDE / Debian
 
-Clone the repository and run:
-
 ```bash
-git clone https://github.com/FenixMint/OS11vLIN.git
-cd OS11vLIN
+git clone https://github.com/FenixMint/FX11-Builder.git
+cd FX11-Builder
 chmod +x scripts/bootstrap-debian.sh
 ./scripts/bootstrap-debian.sh
 . .venv/bin/activate
 ```
 
-The bootstrap installs:
-
-- Python 3 + venv,
-- `wimtools` / `wimlib-imagex`,
-- `xorriso`,
-- QEMU,
-- OVMF firmware.
-
 Then verify the host:
 
 ```bash
-os11vlin doctor
+fx11 doctor
 ```
 
-The ISO builder itself requires only `wimlib-imagex` and `xorriso`. QEMU/OVMF are optional and used for VM testing.
+The ISO builder itself requires `wimlib-imagex` and `xorriso`. QEMU/OVMF are optional and used for VM testing.
 
-## 1. Inspect the source ISO
+## Inspect a source ISO
 
 ```bash
-os11vlin inspect ~/ISO/Win11.iso
+fx11 inspect ~/ISO/Win11.iso
 ```
 
-Example:
+FX11 reads the edition list from the actual `install.wim`/`install.esd`; it does not assume fixed image indexes.
 
-```text
-Source : /home/user/ISO/Win11.iso
-SHA256 : ...
-Image  : ESD
-
-Available Windows images:
-   1. Windows 11 Home [Core]
-   2. Windows 11 Home N [CoreN]
-   6. Windows 11 Pro [Professional]
-   7. Windows 11 Pro N [ProfessionalN]
-  10. Windows 11 Education [Education]
-```
-
-The list is read from the actual `install.wim`/`install.esd`. OS11vLIN does not assume fixed image indexes.
-
-## 2. Build interactively
+## Build interactively
 
 ```bash
-os11vlin build ~/ISO/Win11.iso
+fx11 build ~/ISO/Win11.iso
 ```
 
-OS11vLIN displays the images and asks:
+FX11 displays the available Windows images and asks for the image index.
 
-```text
-Select Windows image index >
-```
-
-Choose Home, Pro or any other edition contained in the ISO.
-
-The default profiles are:
+Default profiles:
 
 ```text
 tiny11-safe
 privacy-balanced
 ```
 
-## 3. Build non-interactively
+## Build non-interactively
 
 By index:
 
 ```bash
-os11vlin build ~/ISO/Win11.iso --index 6 -o ~/ISO/Win11-Pro-OS11vLIN.iso
+fx11 build ~/ISO/Win11.iso --index 6 -o ~/ISO/Win11-Pro-FX11.iso
 ```
 
 By full edition name:
 
 ```bash
-os11vlin build ~/ISO/Win11.iso --edition "Windows 11 Pro"
+fx11 build ~/ISO/Win11.iso --edition "Windows 11 Pro"
 ```
 
 By WIM EditionID:
 
 ```bash
-os11vlin build ~/ISO/Win11.iso --edition Professional
+fx11 build ~/ISO/Win11.iso --edition Professional
 ```
 
-Use `--force` only when intentionally replacing an existing output ISO. OS11vLIN always refuses to overwrite the source ISO.
+Use `--force` only when intentionally replacing an existing output ISO. FX11 always refuses to overwrite the source ISO.
 
 ## Dry run
 
 ```bash
-os11vlin build ~/ISO/Win11.iso --edition "Windows 11 Pro" --dry-run
+fx11 build ~/ISO/Win11.iso --edition "Windows 11 Pro" --dry-run
 ```
 
-This inspects the source, resolves the selected edition and prints all profile actions without creating an ISO.
-
-You can also inspect the profiles alone:
+You can also inspect profiles without creating an image:
 
 ```bash
-os11vlin plan
-os11vlin profiles
+fx11 plan
+fx11 profiles
 ```
 
 ## tiny11-safe profile
 
-The profile removes selected consumer applications such as:
+The profile removes selected consumer applications such as Clipchamp, News and Weather, Get Help / Get Started, People, Solitaire, Feedback Hub, Maps, Phone Link, consumer Xbox packages, legacy media apps, consumer Teams, Family and Quick Assist.
 
-- Clipchamp,
-- News and Weather,
-- Get Help / Get Started,
-- People,
-- Solitaire,
-- Feedback Hub,
-- Maps,
-- Phone Link,
-- consumer Xbox packages,
-- Movies & TV / legacy media package,
-- consumer Teams,
-- Family,
-- Quick Assist.
-
-V1 intentionally preserves the serviceability-critical and commonly required components:
-
-- Microsoft Store,
-- Windows Update,
-- Microsoft Defender,
-- SmartScreen,
-- Edge and WebView2,
-- Windows Terminal,
-- PowerShell,
-- .NET,
-- Windows Installer,
-- Windows Recovery.
-
-This is deliberately less aggressive than `tiny11core`.
+It intentionally preserves Microsoft Store, Windows Update, Defender, SmartScreen, Edge/WebView2, Windows Terminal, PowerShell, .NET, Windows Installer and Windows Recovery.
 
 ## privacy-balanced profile
 
-The privacy profile:
-
-- disables the advertising ID,
-- disables Windows consumer experiences,
-- disables tailored experiences,
-- disables silent suggested application delivery,
-- limits diagnostics to required diagnostic data instead of breaking telemetry services,
-- disables activity-feed publishing/upload,
-- disables web suggestions in Windows Search for newly created users,
-- applies policies disabling Recall data analysis and Windows Copilot,
-- seeds privacy settings into the Default User profile.
-
-It does **not** disable Windows Update, Defender, Microsoft Store or core networking services.
+The privacy profile disables the advertising ID, Windows consumer experiences, tailored experiences, silent suggested application delivery, activity-feed publishing/upload, web suggestions for new users, and applies policies for Recall data analysis and Windows Copilot. Required diagnostic data remains enabled so servicing and security remain functional.
 
 ## Output
 
-A successful build creates:
+A successful default build creates a file similar to:
 
 ```text
-Win11-OS11vLIN-Windows-11-Pro.iso
-Win11-OS11vLIN-Windows-11-Pro.iso.sha256
+Win11-FX11-Windows-11-Pro.iso
+Win11-FX11-Windows-11-Pro.iso.sha256
 ```
 
 The ISO also contains:
 
 ```text
-/OS11vLIN-manifest.json
+/FX11-manifest.json
 /sources/$OEM$/$$/Setup/Scripts/SetupComplete.cmd
-/sources/$OEM$/$$/Setup/Scripts/OS11vLIN.ps1
+/sources/$OEM$/$$/Setup/Scripts/FX11.ps1
 ```
 
-After Windows installation, a copy of the manifest is placed under:
+After Windows installation, the manifest is copied to:
 
 ```text
-C:\OS11vLIN\manifest.json
+C:\FX11\manifest.json
 ```
 
 Provisioning logs are written to:
 
 ```text
-C:\ProgramData\OS11vLIN\
+C:\ProgramData\FX11\
 ```
 
 ## Validate an ISO
 
 ```bash
-os11vlin validate ~/ISO/Win11-Pro-OS11vLIN.iso
+fx11 validate ~/ISO/Win11-Pro-FX11.iso
 ```
 
 Validation checks the ISO, selected `install.wim`, Windows setup boot image, injected scripts, manifest and El Torito boot metadata.
 
 ## Test in QEMU
 
-UEFI/OVMF test:
-
 ```bash
-os11vlin test ~/ISO/Win11-Pro-OS11vLIN.iso
+fx11 test ~/ISO/Win11-Pro-FX11.iso
 ```
 
 Default VM:
@@ -239,19 +165,17 @@ Default VM:
 - UEFI/OVMF,
 - KVM automatically when available.
 
-For example:
+Example:
 
 ```bash
-os11vlin test Win11-Pro-OS11vLIN.iso --memory 8192 --cpus 4 --disk 80
+fx11 test Win11-Pro-FX11.iso --memory 8192 --cpus 4 --disk 80
 ```
 
-Legacy BIOS test:
+Legacy BIOS:
 
 ```bash
-os11vlin test Win11-Pro-OS11vLIN.iso --bios
+fx11 test Win11-Pro-FX11.iso --bios
 ```
-
-The temporary test disk is deleted when QEMU exits.
 
 ## Build pipeline
 
@@ -273,7 +197,7 @@ wimlib export selected index
         +--> single-image install.wim
         |
         v
-inject SetupComplete + tiny11-safe + privacy-balanced
+inject SetupComplete + build profiles
         |
         v
 xorriso rebuild using original boot metadata
@@ -290,12 +214,12 @@ optional QEMU/UEFI test
 
 ## Disk space
 
-The builder temporarily extracts the source installation image and creates a selected-edition WIM. For modern Windows 11 media, having at least **15-20 GiB free** in the system temporary directory is recommended.
+For modern Windows 11 media, at least **15–20 GiB free** in the temporary directory is recommended.
 
-You can point temporary files elsewhere with standard Linux temporary-directory configuration, for example:
+Example with a custom temporary directory:
 
 ```bash
-TMPDIR=/mnt/fastdisk/tmp os11vlin build Win11.iso
+TMPDIR=/mnt/fastdisk/tmp fx11 build Win11.iso
 ```
 
 ## Development tests
@@ -305,7 +229,7 @@ TMPDIR=/mnt/fastdisk/tmp os11vlin build Win11.iso
 pytest
 ```
 
-GitHub Actions runs unit tests on Ubuntu and a Debian Trixie container. Real ISO boot/install validation should additionally be performed on Linux Mint, LMDE and Debian hosts because CI does not redistribute Microsoft installation media.
+GitHub Actions runs unit tests and a synthetic end-to-end multi-edition ISO build on Debian. Real Microsoft ISO boot/install validation should additionally be performed on Linux Mint, LMDE and Debian hosts because CI does not redistribute Microsoft installation media.
 
 ## Safety rules
 
@@ -314,13 +238,13 @@ GitHub Actions runs unit tests on Ubuntu and a Debian Trixie container. Real ISO
 3. A selected Windows image is exported into a new WIM rather than editing the source installation image.
 4. Every modification is declared in a profile.
 5. A build manifest is included in the result.
-6. Critical Windows components are kept by the V1 profile.
+6. Critical Windows components are kept by the default profile.
 7. The final ISO must pass structural validation before it is published as the output file.
 
 ## Legal note
 
-OS11vLIN does not contain or redistribute Microsoft Windows binaries. Users provide their own installation ISO and are responsible for complying with the applicable Microsoft license terms.
+FX11 Builder does not contain or redistribute Microsoft Windows binaries. Users provide their own installation ISO and are responsible for complying with the applicable Microsoft license terms.
 
 ## tiny11 relationship
 
-OS11vLIN is an independent Linux-native builder inspired by the tiny11maker methodology. It is not an official tiny11/NTDEV project and deliberately uses a more conservative V1 package-removal policy.
+FX11 Builder is an independent Linux-native builder inspired by the tiny11maker methodology. It is not an official tiny11/NTDEV project and deliberately uses a more conservative package-removal policy.

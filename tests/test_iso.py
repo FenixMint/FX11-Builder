@@ -1,6 +1,6 @@
 import pytest
 
-from os11vlin.iso import BuilderError, Edition, find_edition
+from fx11.iso import BuilderError, Edition, find_edition
 
 
 EDITIONS = (

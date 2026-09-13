@@ -7,12 +7,12 @@ from .profiles import appx_targets
 
 SETUP_COMPLETE = r'''@echo off
 setlocal
-set "LOGDIR=%ProgramData%\OS11vLIN"
+set "LOGDIR=%ProgramData%\FX11"
 if not exist "%LOGDIR%" mkdir "%LOGDIR%"
-echo [%DATE% %TIME%] OS11vLIN SetupComplete starting>>"%LOGDIR%\setupcomplete.log"
-powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%WINDIR%\Setup\Scripts\OS11vLIN.ps1" >>"%LOGDIR%\setupcomplete.log" 2>&1
+echo [%DATE% %TIME%] FX11 Builder SetupComplete starting>>"%LOGDIR%\setupcomplete.log"
+powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "%WINDIR%\Setup\Scripts\FX11.ps1" >>"%LOGDIR%\setupcomplete.log" 2>&1
 set "RC=%ERRORLEVEL%"
-echo [%DATE% %TIME%] OS11vLIN PowerShell exit code %RC%>>"%LOGDIR%\setupcomplete.log"
+echo [%DATE% %TIME%] FX11 PowerShell exit code %RC%>>"%LOGDIR%\setupcomplete.log"
 exit /b 0
 '''
 
@@ -33,9 +33,9 @@ Set-RegDword "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot" "TurnOff
 # Seed privacy defaults for accounts created after Windows Setup.
 $defaultHive = "$env:SystemDrive\Users\Default\NTUSER.DAT"
 if (Test-Path $defaultHive) {
-    & reg.exe load "HKU\OS11vLIN_Default" $defaultHive | Out-Null
+    & reg.exe load "HKU\FX11_Default" $defaultHive | Out-Null
     if ($LASTEXITCODE -eq 0) {
-        $cdm = "Registry::HKEY_USERS\OS11vLIN_Default\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+        $cdm = "Registry::HKEY_USERS\FX11_Default\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
         Set-RegDword $cdm "ContentDeliveryAllowed" 0
         Set-RegDword $cdm "OemPreInstalledAppsEnabled" 0
         Set-RegDword $cdm "PreInstalledAppsEnabled" 0
@@ -48,10 +48,10 @@ if (Test-Path $defaultHive) {
         Set-RegDword $cdm "SubscribedContent-338393Enabled" 0
         Set-RegDword $cdm "SubscribedContent-353694Enabled" 0
         Set-RegDword $cdm "SubscribedContent-353696Enabled" 0
-        Set-RegDword "Registry::HKEY_USERS\OS11vLIN_Default\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo" "Enabled" 0
-        Set-RegDword "Registry::HKEY_USERS\OS11vLIN_Default\Software\Microsoft\Windows\CurrentVersion\Privacy" "TailoredExperiencesWithDiagnosticDataEnabled" 0
-        Set-RegDword "Registry::HKEY_USERS\OS11vLIN_Default\Software\Policies\Microsoft\Windows\Explorer" "DisableSearchBoxSuggestions" 1
-        & reg.exe unload "HKU\OS11vLIN_Default" | Out-Null
+        Set-RegDword "Registry::HKEY_USERS\FX11_Default\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo" "Enabled" 0
+        Set-RegDword "Registry::HKEY_USERS\FX11_Default\Software\Microsoft\Windows\CurrentVersion\Privacy" "TailoredExperiencesWithDiagnosticDataEnabled" 0
+        Set-RegDword "Registry::HKEY_USERS\FX11_Default\Software\Policies\Microsoft\Windows\Explorer" "DisableSearchBoxSuggestions" 1
+        & reg.exe unload "HKU\FX11_Default" | Out-Null
     } else {
         Write-Log "WARNING: could not load Default User registry hive"
     }
@@ -71,7 +71,7 @@ def powershell_script(profile_ids: list[str]) -> str:
 
     parts = [r'''$ErrorActionPreference = "Continue"
 $ProgressPreference = "SilentlyContinue"
-$logDir = Join-Path $env:ProgramData "OS11vLIN"
+$logDir = Join-Path $env:ProgramData "FX11"
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 $logFile = Join-Path $logDir "provisioning.log"
 
@@ -91,7 +91,7 @@ function Set-RegDword([string]$Path, [string]$Name, [int]$Value) {
     }
 }
 
-Write-Log "OS11vLIN provisioning started"
+Write-Log "FX11 Builder provisioning started"
 ''']
 
     if tiny_enabled:
@@ -135,7 +135,7 @@ foreach ($target in $AppxTargets) {{
         parts.append(PRIVACY_SCRIPT)
 
     parts.append(r'''
-Write-Log "OS11vLIN provisioning completed"
+Write-Log "FX11 Builder provisioning completed"
 exit 0
 ''')
     return "\n".join(parts)
@@ -145,7 +145,7 @@ def write_provisioning_files(root: Path, profile_ids: list[str]) -> tuple[Path, 
     scripts = root / "scripts"
     scripts.mkdir(parents=True, exist_ok=True)
     setup = scripts / "SetupComplete.cmd"
-    ps1 = scripts / "OS11vLIN.ps1"
+    ps1 = scripts / "FX11.ps1"
     setup.write_text(SETUP_COMPLETE, encoding="utf-8", newline="\r\n")
     ps1.write_text(powershell_script(profile_ids), encoding="utf-8-sig", newline="\r\n")
     return setup, ps1

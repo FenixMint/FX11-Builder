@@ -1,4 +1,4 @@
-from os11vlin.provisioning import powershell_script
+from fx11.provisioning import powershell_script
 
 
 def test_tiny11_script_removes_declared_consumer_apps():

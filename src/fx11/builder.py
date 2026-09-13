@@ -49,7 +49,7 @@ def export_selected_edition(inspection: IsoInspection, edition: Edition, destina
 
 def _manifest(inspection: IsoInspection, edition: Edition, profile_ids: list[str]) -> dict[str, object]:
     return {
-        "project": "OS11vLIN",
+        "project": "FX11 Builder",
         "builder_version": __version__,
         "build_utc": datetime.now(timezone.utc).isoformat(),
         "source_iso": inspection.source.name,
@@ -99,8 +99,8 @@ def validate_output_iso(iso: Path) -> None:
         "/sources/boot.wim",
         "/sources/install.wim",
         "/sources/$OEM$/$$/Setup/Scripts/SetupComplete.cmd",
-        "/sources/$OEM$/$$/Setup/Scripts/OS11vLIN.ps1",
-        "/OS11vLIN-manifest.json",
+        "/sources/$OEM$/$$/Setup/Scripts/FX11.ps1",
+        "/FX11-manifest.json",
     )
     missing = [item for item in required if not _iso_has_path(iso, item)]
     if missing:
@@ -131,12 +131,12 @@ def build_iso(
     if current_source_hash != inspection.source_sha256:
         raise BuilderError("Source ISO changed after inspection; aborting build.")
 
-    with tempfile.TemporaryDirectory(prefix="os11vlin-build-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="fx11-build-") as temporary:
         root = Path(temporary)
         selected_wim = export_selected_edition(inspection, edition, root / "install.wim")
         setup_complete, powershell = write_provisioning_files(root, profile_ids)
         manifest_data = _manifest(inspection, edition, profile_ids)
-        manifest = root / "OS11vLIN-manifest.json"
+        manifest = root / "FX11-manifest.json"
         manifest.write_text(json.dumps(manifest_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
         partial = output_iso.with_name(output_iso.name + ".building")
@@ -144,9 +144,9 @@ def build_iso(
         maps = [
             (selected_wim, "/sources/install.wim"),
             (setup_complete, "/sources/$OEM$/$$/Setup/Scripts/SetupComplete.cmd"),
-            (powershell, "/sources/$OEM$/$$/Setup/Scripts/OS11vLIN.ps1"),
-            (manifest, "/OS11vLIN-manifest.json"),
-            (manifest, "/sources/$OEM$/$1/OS11vLIN/manifest.json"),
+            (powershell, "/sources/$OEM$/$$/Setup/Scripts/FX11.ps1"),
+            (manifest, "/FX11-manifest.json"),
+            (manifest, "/sources/$OEM$/$1/FX11/manifest.json"),
         ]
 
         command = [
@@ -186,7 +186,7 @@ def build_iso(
 
 
 def inspect_source(source: Path) -> tuple[IsoInspection, tempfile.TemporaryDirectory]:
-    temp = tempfile.TemporaryDirectory(prefix="os11vlin-inspect-")
+    temp = tempfile.TemporaryDirectory(prefix="fx11-inspect-")
     try:
         inspection = inspect_iso(source, Path(temp.name))
         return inspection, temp

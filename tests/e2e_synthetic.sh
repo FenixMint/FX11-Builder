@@ -36,12 +36,12 @@ xorriso -as mkisofs \
   -o "$ROOT/source.iso" \
   "$ROOT/iso" >/dev/null 2>&1
 
-os11vlin inspect "$ROOT/source.iso" | tee "$ROOT/inspect.txt"
+fx11 inspect "$ROOT/source.iso" | tee "$ROOT/inspect.txt"
 grep -q "Windows 11 Home" "$ROOT/inspect.txt"
 grep -q "Windows 11 Pro" "$ROOT/inspect.txt"
 
-os11vlin build "$ROOT/source.iso" --index 2 -o "$ROOT/output.iso"
-os11vlin validate "$ROOT/output.iso"
+fx11 build "$ROOT/source.iso" --index 2 -o "$ROOT/output.iso"
+fx11 validate "$ROOT/output.iso"
 test -s "$ROOT/output.iso.sha256"
 
 xorriso -osirrox on -indev "$ROOT/output.iso" -extract /sources/install.wim "$ROOT/output-install.wim" >/dev/null 2>&1
@@ -62,7 +62,7 @@ assert images[0].findtext("WINDOWS/EDITIONID") == "Professional"
 PY
 
 xorriso -indev "$ROOT/output.iso" -ls '/sources/$OEM$/$$/Setup/Scripts/SetupComplete.cmd' >/dev/null 2>&1
-xorriso -indev "$ROOT/output.iso" -ls '/sources/$OEM$/$$/Setup/Scripts/OS11vLIN.ps1' >/dev/null 2>&1
-xorriso -indev "$ROOT/output.iso" -ls '/OS11vLIN-manifest.json' >/dev/null 2>&1
+xorriso -indev "$ROOT/output.iso" -ls '/sources/$OEM$/$$/Setup/Scripts/FX11.ps1' >/dev/null 2>&1
+xorriso -indev "$ROOT/output.iso" -ls '/FX11-manifest.json' >/dev/null 2>&1
 
-echo "Synthetic end-to-end build: PASS"
+echo "FX11 synthetic end-to-end build: PASS"

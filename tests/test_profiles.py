@@ -1,6 +1,6 @@
 import pytest
 
-from os11vlin.profiles import Action, PROTECTED_COMPONENTS, PROFILES, Profile, validate_profile
+from fx11.profiles import Action, PROTECTED_COMPONENTS, PROFILES, Profile, validate_profile
 
 
 def test_v1_profiles_exist():
