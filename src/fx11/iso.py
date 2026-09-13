@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
+import re
+import shutil
 import subprocess
 import xml.etree.ElementTree as ET
 
@@ -27,6 +29,7 @@ class IsoInspection:
     install_image: Path
     install_format: str
     editions: tuple[Edition, ...]
+    media_format: str = "iso9660"
 
 
 def run_checked(args: list[str], *, capture_output: bool = False) -> subprocess.CompletedProcess:
@@ -52,22 +55,141 @@ def sha256_file(path: Path, chunk_size: int = 1024 * 1024) -> str:
     return digest.hexdigest()
 
 
+def _sevenzip() -> str | None:
+    return shutil.which("7z")
+
+
+def detect_media_format(source_iso: Path) -> str:
+    """Detect the filesystem view exposed by the installation image.
+
+    Current Microsoft Windows 11 media can be UDF-first. xorriso only exposes
+    the ISO9660 side of such bridge images, which can contain little more than
+    the primary volume descriptors. 7-Zip can read the UDF tree directly.
+    """
+    sevenzip = _sevenzip()
+    if sevenzip is None:
+        return "iso9660"
+    proc = subprocess.run(
+        [sevenzip, "l", "-slt", str(source_iso)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if proc.returncode != 0:
+        return "iso9660"
+    text = proc.stdout.decode("utf-8", errors="replace")
+    match = re.search(r"(?m)^Type\s*=\s*([^\r\n]+)$", text)
+    if not match:
+        return "iso9660"
+    archive_type = match.group(1).strip().casefold()
+    if archive_type == "udf":
+        return "udf"
+    return "iso9660"
+
+
+def extract_iso_member(
+    source_iso: Path,
+    iso_path: str,
+    destination: Path,
+    *,
+    media_format: str | None = None,
+) -> Path:
+    source_iso = source_iso.expanduser().resolve()
+    destination = destination.expanduser().resolve()
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.unlink(missing_ok=True)
+    media_format = media_format or detect_media_format(source_iso)
+
+    if media_format == "udf":
+        sevenzip = _sevenzip()
+        if sevenzip is None:
+            raise BuilderError(
+                "This Microsoft ISO uses UDF. The '7z' command is required to read current UDF installation media. "
+                "Install the Debian-family package '7zip'."
+            )
+        member = iso_path.lstrip("/")
+        with destination.open("wb") as handle:
+            proc = subprocess.run(
+                [sevenzip, "x", "-so", str(source_iso), member],
+                stdout=handle,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+        if proc.returncode != 0 or not destination.is_file() or destination.stat().st_size == 0:
+            destination.unlink(missing_ok=True)
+            detail = (proc.stderr or b"").decode("utf-8", errors="replace").strip()
+            raise BuilderError(f"Unable to extract /{member} from UDF installation media.\n{detail}")
+        return destination
+
+    proc = subprocess.run(
+        ["xorriso", "-osirrox", "on", "-indev", str(source_iso), "-extract", iso_path, str(destination)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if proc.returncode != 0 or not destination.is_file() or destination.stat().st_size == 0:
+        destination.unlink(missing_ok=True)
+        detail = (proc.stderr or b"").decode("utf-8", errors="replace").strip()
+        raise BuilderError(f"Unable to extract {iso_path} from ISO installation media.\n{detail}")
+    return destination
+
+
+def extract_media_tree(source_iso: Path, destination: Path) -> Path:
+    """Extract the complete source media tree with 7-Zip.
+
+    This is primarily used for UDF-first Microsoft media before rebuilding a
+    normal ISO9660 level-3 FX11 image. It intentionally extracts into a fresh
+    temporary directory owned by the builder.
+    """
+    sevenzip = _sevenzip()
+    if sevenzip is None:
+        raise BuilderError(
+            "The '7z' command is required to extract UDF installation media. "
+            "Install the Debian-family package '7zip'."
+        )
+    destination = destination.expanduser().resolve()
+    destination.mkdir(parents=True, exist_ok=True)
+    proc = subprocess.run(
+        [sevenzip, "x", "-y", f"-o{destination}", str(source_iso.expanduser().resolve())],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if proc.returncode != 0:
+        detail = (proc.stderr or b"").decode("utf-8", errors="replace").strip()
+        raise BuilderError(f"Unable to extract the Microsoft installation media tree with 7-Zip.\n{detail}")
+    required = (
+        destination / "sources" / "boot.wim",
+        destination / "boot" / "etfsboot.com",
+        destination / "efi" / "microsoft" / "boot" / "efisys.bin",
+    )
+    missing = [str(path.relative_to(destination)) for path in required if not path.is_file()]
+    if missing:
+        raise BuilderError("Extracted UDF installation media is missing required boot files: " + ", ".join(missing))
+    return destination
+
+
 def extract_install_image(source_iso: Path, destination: Path) -> tuple[Path, str]:
     destination.mkdir(parents=True, exist_ok=True)
+    media_format = detect_media_format(source_iso)
     attempts = (("install.wim", "wim"), ("install.esd", "esd"))
     errors: list[str] = []
     for filename, image_format in attempts:
         out = destination / filename
-        proc = subprocess.run(
-            ["xorriso", "-osirrox", "on", "-indev", str(source_iso), "-extract", f"/sources/{filename}", str(out)],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            check=False,
-        )
-        if proc.returncode == 0 and out.exists() and out.stat().st_size > 0:
+        try:
+            extract_iso_member(
+                source_iso,
+                f"/sources/{filename}",
+                out,
+                media_format=media_format,
+            )
+        except BuilderError as exc:
+            out.unlink(missing_ok=True)
+            errors.append(str(exc))
+            continue
+        if out.exists() and out.stat().st_size > 0:
             return out, image_format
         out.unlink(missing_ok=True)
-        errors.append((proc.stderr or b"").decode("utf-8", errors="replace"))
     raise BuilderError("No /sources/install.wim or /sources/install.esd found in the ISO.\n" + "\n".join(errors[-2:]))
 
 
@@ -110,6 +232,7 @@ def inspect_iso(source_iso: Path, work_dir: Path) -> IsoInspection:
         raise BuilderError(f"ISO not found: {source_iso}")
     if source_iso.suffix.lower() != ".iso":
         raise BuilderError(f"Input must be an .iso file: {source_iso}")
+    media_format = detect_media_format(source_iso)
     image, image_format = extract_install_image(source_iso, work_dir)
     editions = read_editions(image)
     return IsoInspection(
@@ -118,6 +241,7 @@ def inspect_iso(source_iso: Path, work_dir: Path) -> IsoInspection:
         install_image=image,
         install_format=image_format,
         editions=editions,
+        media_format=media_format,
     )
 
 
