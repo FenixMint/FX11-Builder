@@ -166,8 +166,12 @@ def _expected_fx11_paths(manifest: dict[str, object]) -> set[str]:
 
 
 def list_wim_files(wim: Path, index: int) -> tuple[str, ...]:
+    # `wimlib-imagex dir` lists the selected image recursively from its root by
+    # default. A bare `/` is not a positional PATH argument; modern wimlib
+    # accepts an optional `--path=PATH` switch instead. Passing `/` as a fourth
+    # positional argument causes `ERROR: Too many arguments` on wimlib 1.14.x.
     proc = _run(
-        ["wimlib-imagex", "dir", str(wim), str(index), "/"],
+        ["wimlib-imagex", "dir", str(wim), str(index)],
         f"Unable to inventory WIM image {index}",
     )
     files: set[str] = set()
@@ -175,9 +179,10 @@ def list_wim_files(wim: Path, index: int) -> tuple[str, ...]:
         line = raw.strip()
         if not line or line.startswith("Available") or line.startswith("Directory of"):
             continue
-        candidate = line.split()[-1].strip('"')
-        if candidate.startswith(("/", "\\")):
-            files.add(_normalize_path(candidate))
+        # Non-detailed wimdir output is one absolute WIM path per line. Keep
+        # the whole line so paths containing spaces are not truncated.
+        if line.startswith(("/", "\\")):
+            files.add(_normalize_path(line))
     if not files:
         raise BuilderError("wimlib-imagex returned no file inventory for the selected Windows image.")
     return tuple(sorted(files))
