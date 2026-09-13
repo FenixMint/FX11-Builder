@@ -5,6 +5,8 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 import shutil
+import subprocess
+import sys
 import tempfile
 
 from . import __version__
@@ -47,7 +49,40 @@ def export_selected_edition(inspection: IsoInspection, edition: Edition, destina
     return destination
 
 
-def _manifest(inspection: IsoInspection, edition: Edition, profile_ids: list[str]) -> dict[str, object]:
+def _tool_record(command: str, version_args: list[str]) -> dict[str, str]:
+    path = shutil.which(command) or ""
+    version = "unknown"
+    if path:
+        try:
+            proc = subprocess.run(
+                [path, *version_args],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                check=False,
+                timeout=10,
+            )
+            text = proc.stdout.decode("utf-8", errors="replace").strip()
+            if text:
+                version = text.splitlines()[0].strip()
+        except (OSError, subprocess.SubprocessError):
+            pass
+    return {"path": path, "version": version}
+
+
+def _build_tools() -> dict[str, object]:
+    return {
+        "python": {"path": sys.executable, "version": sys.version.split()[0]},
+        "wimlib-imagex": _tool_record("wimlib-imagex", ["--version"]),
+        "xorriso": _tool_record("xorriso", ["-version"]),
+    }
+
+
+def _manifest(
+    inspection: IsoInspection,
+    edition: Edition,
+    profile_ids: list[str],
+    injected_hashes: dict[str, str],
+) -> dict[str, object]:
     return {
         "project": "FX11 Builder",
         "builder_version": __version__,
@@ -62,11 +97,23 @@ def _manifest(inspection: IsoInspection, edition: Edition, profile_ids: list[str
             "architecture": edition.architecture,
         },
         "profiles": profile_ids,
+        "build_tools": _build_tools(),
+        "injected_files": {
+            "/sources/$OEM$/$$/Setup/Scripts/SetupComplete.cmd": {
+                "sha256": injected_hashes["SetupComplete.cmd"],
+                "purpose": "Verify and launch FX11 provisioning",
+            },
+            "/sources/$OEM$/$$/Setup/Scripts/FX11.ps1": {
+                "sha256": injected_hashes["FX11.ps1"],
+                "purpose": "Declared FX11 provisioning actions",
+            },
+        },
         "strategy": {
             "edition": "selected image exported with wimlib to a single-image install.wim",
             "debloat": "Windows SetupComplete removes declared provisioned AppX packages using Windows servicing APIs",
             "privacy": "machine/default-user policy applied during SetupComplete",
             "boot": "original ISO boot metadata replayed by xorriso",
+            "integrity": "SetupComplete verifies the SHA-256 of FX11.ps1 before executing it",
         },
         "preserved": [
             "Microsoft Store",
@@ -81,8 +128,6 @@ def _manifest(inspection: IsoInspection, edition: Edition, profile_ids: list[str
 
 
 def _iso_has_path(iso: Path, iso_path: str) -> bool:
-    import subprocess
-
     proc = subprocess.run(
         ["xorriso", "-indev", str(iso), "-ls", iso_path],
         stdout=subprocess.PIPE,
@@ -134,8 +179,8 @@ def build_iso(
     with tempfile.TemporaryDirectory(prefix="fx11-build-") as temporary:
         root = Path(temporary)
         selected_wim = export_selected_edition(inspection, edition, root / "install.wim")
-        setup_complete, powershell = write_provisioning_files(root, profile_ids)
-        manifest_data = _manifest(inspection, edition, profile_ids)
+        setup_complete, powershell, injected_hashes = write_provisioning_files(root, profile_ids)
+        manifest_data = _manifest(inspection, edition, profile_ids, injected_hashes)
         manifest = root / "FX11-manifest.json"
         manifest.write_text(json.dumps(manifest_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
