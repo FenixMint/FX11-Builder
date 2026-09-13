@@ -8,8 +8,8 @@ Usage:
 
 Rebuilds an already-generated FX11 ISO with a GPT EFI System Partition view of
 the existing UEFI El Torito image. During repack it refreshes the staged FX11
-media GRUB configuration from the current checkout, so boot-menu fixes can be
-tested without rebuilding install.wim or boot.wim.
+media GRUB configuration and graphical theme from the current checkout, so boot
+menu changes can be tested without rebuilding install.wim or boot.wim.
 EOF
 }
 
@@ -67,6 +67,7 @@ echo "=== 1. Extracting ISO filesystem ==="
 BIOS="$TREE/boot/etfsboot.com"
 UEFI="$TREE/efi/microsoft/boot/efisys.bin"
 MEDIA_GRUB="$TREE/FX11/media/grub.cfg"
+MEDIA_THEME_DIR="$TREE/FX11/media/theme"
 
 if [[ ! -f "$BIOS" ]]; then
   echo "ERROR: missing BIOS El Torito image after extraction: $BIOS" >&2
@@ -82,18 +83,36 @@ if [[ ! -f "$MEDIA_GRUB" ]]; then
 fi
 
 echo
-echo "=== 2. Refreshing FX11 media boot menu ==="
+echo "=== 2. Refreshing FX11 media boot menu and theme ==="
 PYTHONPATH="$REPO_ROOT/src${PYTHONPATH:+:$PYTHONPATH}" \
-  "$PYTHON" - "$MEDIA_GRUB" <<'PY'
+  "$PYTHON" - "$MEDIA_GRUB" "$MEDIA_THEME_DIR" <<'PY'
 from pathlib import Path
 import sys
 
 from fx11.media_boot import build_media_grub_config
+from fx11.media_theme import build_media_theme
 
-path = Path(sys.argv[1])
-path.write_text(build_media_grub_config().grub_config, encoding="utf-8")
-print(f"Updated: {path}")
+grub_path = Path(sys.argv[1])
+theme_dir = Path(sys.argv[2])
+
+grub_path.write_text(build_media_grub_config().grub_config, encoding="utf-8")
+theme = build_media_theme(theme_dir)
+
+print(f"Updated menu : {grub_path}")
+print(f"Theme config : {theme.theme_config}")
+print(f"Background   : {theme.background}")
+print(f"GRUB font    : {theme.font}")
 PY
+
+THEME_CONFIG="$MEDIA_THEME_DIR/theme.txt"
+THEME_BACKGROUND="$MEDIA_THEME_DIR/background.png"
+THEME_FONT="$MEDIA_THEME_DIR/unicode.pf2"
+for required in "$THEME_CONFIG" "$THEME_BACKGROUND" "$THEME_FONT"; do
+  if [[ ! -s "$required" ]]; then
+    echo "ERROR: graphical GRUB theme asset missing: $required" >&2
+    exit 1
+  fi
+done
 
 echo
 echo "=== 3. Rebuilding with GPT EFI System Partition metadata ==="
@@ -134,13 +153,25 @@ echo "=== 5. Verifying El Torito ==="
 xorriso -indev "$OUTPUT" -report_el_torito plain
 
 echo
-echo "=== 6. Verifying refreshed FX boot menu ==="
+echo "=== 6. Verifying refreshed FX boot menu and theme ==="
 if ! grep -q "gl_batch" "$MEDIA_GRUB"; then
   echo "ERROR: refreshed media GRUB config does not enable GParted batch graphics mode." >&2
   exit 1
 fi
 if ! grep -q "chainloader .*bootmgr.efi" "$MEDIA_GRUB"; then
-  echo "ERROR: refreshed media GRUB config does not target /bootmgr.efi for WinPE fallback." >&2
+  echo "ERROR: refreshed media GRUB config does not target /bootmgr.efi for WinPE." >&2
+  exit 1
+fi
+if ! grep -q "FX11/media/theme/theme.txt" "$MEDIA_GRUB"; then
+  echo "ERROR: refreshed media GRUB config does not load the FX11 graphical theme." >&2
+  exit 1
+fi
+if ! grep -q 'text = "FX11"' "$THEME_CONFIG"; then
+  echo "ERROR: FX11 theme identity is missing." >&2
+  exit 1
+fi
+if ! grep -q 'text = "Fenix"' "$THEME_CONFIG"; then
+  echo "ERROR: FX11 theme author mark is missing." >&2
   exit 1
 fi
 
