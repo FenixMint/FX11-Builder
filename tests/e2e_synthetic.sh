@@ -67,15 +67,20 @@ wimlib-imagex extract "$ROOT/output-boot.wim" 2 \
   /Windows/System32/startnet.cmd \
   /Windows/System32/winpeshl.ini \
   /FX11/fx11-launch.cmd \
+  /FX11/fx11-partition.cmd \
+  /FX11/fx11-install.cmd \
   --dest-dir="$ROOT/boot-check" --no-acls >/dev/null
 
 grep -qi "wpeinit" "$ROOT/boot-check/Windows/System32/startnet.cmd"
 grep -q "FX11\\fx11-launch.cmd" "$ROOT/boot-check/Windows/System32/startnet.cmd"
 grep -qi "startnet.cmd" "$ROOT/boot-check/Windows/System32/winpeshl.ini"
-grep -q "FX Partition Manager bootstrap loaded" "$ROOT/boot-check/FX11/fx11-launch.cmd"
+grep -q "Start FX Partition Manager" "$ROOT/boot-check/FX11/fx11-launch.cmd"
+grep -q "Continue directly to FX11 installation" "$ROOT/boot-check/FX11/fx11-partition.cmd"
+grep -qi "dism /Apply-Image" "$ROOT/boot-check/FX11/fx11-install.cmd"
+grep -qi "bcdboot W:\\Windows /s S: /f UEFI" "$ROOT/boot-check/FX11/fx11-install.cmd"
 
 xorriso -indev "$ROOT/output.iso" -ls '/sources/$OEM$/$$/Setup/Scripts/SetupComplete.cmd' >/dev/null 2>&1
 xorriso -indev "$ROOT/output.iso" -ls '/sources/$OEM$/$$/Setup/Scripts/FX11.ps1' >/dev/null 2>&1
 xorriso -indev "$ROOT/output.iso" -ls '/FX11-manifest.json' >/dev/null 2>&1
 
-echo "FX11 synthetic end-to-end build with WinPE handoff: PASS"
+echo "FX11 synthetic end-to-end build with partition-to-installer handoff: PASS"
