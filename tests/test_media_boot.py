@@ -27,6 +27,7 @@ def test_media_boot_defaults_to_gparted_partition_manager():
     assert "(loop)/live/vmlinuz" in text
     assert "findiso=$isofile" in text
     assert "gl_batch" in text
+    assert "hooks=medium" in text
     assert "locales=pl_PL.UTF-8" in text
     assert "keyboard-layouts=pl" in text
 
@@ -61,12 +62,12 @@ def test_media_boot_uses_preserved_microsoft_loader_for_winpe():
     assert "chainloader ($winmedia)/efi/boot/bootx64.efi" not in text
 
 
-def test_media_boot_supports_future_continue_marker():
+def test_media_boot_supports_continue_marker():
     text = build_media_grub_config().grub_config
 
     assert MEDIA_CONTINUE_MARKER_PATH in text
     assert "set default='fx11-winpe'" in text
-    assert "set timeout=1" in text
+    assert "set timeout=3" in text
 
 
 def test_media_boot_rejects_negative_timeout():
