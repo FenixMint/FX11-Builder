@@ -104,3 +104,56 @@ def test_list_wim_files_uses_supported_wimdir_syntax_and_preserves_spaces(monkey
         "/Windows/System32/kernel32.dll",
     )
     assert captured["args"] == ["wimlib-imagex", "dir", str(wim), "1"]
+
+
+def test_verified_media_preservation_accepts_byte_identical_microsoft_loader(monkeypatch, tmp_path: Path):
+    source_iso = tmp_path / "source.iso"
+    output_iso = tmp_path / "output.iso"
+    source_iso.write_bytes(b"source")
+    output_iso.write_bytes(b"output")
+    payload = b"signed-microsoft-loader"
+
+    def fake_extract(iso: Path, iso_path: str, destination: Path) -> Path:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(payload)
+        return destination
+
+    monkeypatch.setattr(audit_module, "extract_iso_path", fake_extract)
+
+    expected, records = audit_module._verified_media_preservation_additions(
+        source_iso,
+        output_iso,
+        (audit_module.MICROSOFT_REMOVABLE_BOOT_PATH,),
+        (audit_module.MICROSOFT_FALLBACK_BOOT_PATH,),
+        tmp_path / "work",
+    )
+
+    assert expected == {audit_module.MICROSOFT_FALLBACK_BOOT_PATH}
+    record = records[audit_module.MICROSOFT_FALLBACK_BOOT_PATH]
+    assert record["byte_identical"] is True
+    assert record["source_sha256"] == record["output_sha256"]
+
+
+def test_verified_media_preservation_rejects_changed_loader(monkeypatch, tmp_path: Path):
+    source_iso = tmp_path / "source.iso"
+    output_iso = tmp_path / "output.iso"
+    source_iso.write_bytes(b"source")
+    output_iso.write_bytes(b"output")
+
+    def fake_extract(iso: Path, iso_path: str, destination: Path) -> Path:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(b"source-loader" if iso == source_iso else b"changed-loader")
+        return destination
+
+    monkeypatch.setattr(audit_module, "extract_iso_path", fake_extract)
+
+    expected, records = audit_module._verified_media_preservation_additions(
+        source_iso,
+        output_iso,
+        (audit_module.MICROSOFT_REMOVABLE_BOOT_PATH,),
+        (audit_module.MICROSOFT_FALLBACK_BOOT_PATH,),
+        tmp_path / "work",
+    )
+
+    assert expected == set()
+    assert records[audit_module.MICROSOFT_FALLBACK_BOOT_PATH]["byte_identical"] is False
