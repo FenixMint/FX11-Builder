@@ -121,19 +121,31 @@ WSL2 is an **optional add-on**, not part of the mandatory FX11 base installation
 
 FX11 First Run and FX11 Control Center may offer an optional **Linux / WSL2** module. If the user does not select it, the required WSL/virtualization Windows features must remain untouched by FX11.
 
-The module should:
+The WSL2 installation flow must be designed specifically to avoid the default Ubuntu installation path. FX11 must **never** execute a bare `wsl --install` command as its normal setup action, because Microsoft currently uses that command to install WSL together with Ubuntu by default.
+
+The FX11 flow should instead:
+
+1. enable/install the WSL platform **without installing a Linux distribution**, using the supported no-distribution path where available,
+2. query the live WSL catalogue with `wsl --list --online` / `wsl -l -o`,
+3. display the distributions that are actually available at that moment,
+4. mark **Fedora, Debian and AlmaLinux** as FX11-recommended choices when they appear in the live catalogue,
+5. keep every other available distribution visible and selectable,
+6. install only the exact distribution explicitly chosen by the user, using its returned WSL distribution name,
+7. avoid launching or setting a distribution as default until the user has explicitly selected it.
+
+Ubuntu must not be promoted, preselected or automatically installed by FX11. If Ubuntu appears in the live WSL catalogue, it may remain visible as an ordinary user-selectable option because **Your System. Your Rules.**
+
+The module should also:
 
 - explain in plain language what WSL2 is and when it is useful,
 - offer to enable the required Windows features only after explicit user selection,
-- let the user choose which Linux distribution to install from the distributions currently available to WSL,
-- prominently suggest **Fedora, Debian and AlmaLinux** when they are available through the supported WSL installation sources,
-- not promote or suggest Ubuntu in FX11's recommended WSL2 choices,
-- allow other currently available WSL distributions to remain visible so the user keeps full choice,
 - allow installation to be skipped and revisited later,
 - include a short getting-started guide after installation,
 - provide basic commands for updating packages, accessing Windows files, launching Linux shells and shutting down/restarting WSL,
 - include notes for developers about Git, SSH, Python, containers and command-line tooling where appropriate,
-- avoid hard-coding the complete distro list; the implementation should query the currently supported/available WSL distributions at runtime and apply FX11's recommendation labels to Fedora, Debian and AlmaLinux where present.
+- avoid hard-coding the complete distro list; the live Microsoft WSL catalogue is the source of truth for what can be installed through the standard WSL path.
+
+If a desired distribution is not present in the online WSL catalogue, FX11 may later expose an **Advanced / Import distribution** workflow based on supported WSL import mechanisms, but this must be separate from the simple First Run path.
 
 ### Installer disk layout and automatic partitioning
 
@@ -145,13 +157,20 @@ The installer should offer at least these modes:
 - **FX11 + Other OS** — automatically prepare the Windows-required partitions, create the FX11/Windows partition at the selected size, and leave the chosen remainder of the disk **unallocated** for another operating system.
 - **Custom / advanced** — do not apply an automatic layout; hand control to an advanced partition-selection flow for users who need an existing or unusual disk layout.
 
-**Other OS** means another operating system installed alongside FX11. User-facing examples may include **Linux Mint, Fedora, openSUSE, Rocky Linux, AlmaLinux, Debian, Arch Linux, FreeBSD and OpenBSD**. Ubuntu is not part of FX11's recommendation/example list.
+**Other OS** means another operating system installed alongside FX11. User-facing examples should be grouped by family:
+
+- **Linux:** Linux Mint, Fedora, openSUSE, Rocky Linux, AlmaLinux, Debian, Arch Linux.
+- **BSD:** FreeBSD, OpenBSD, NetBSD.
+- **Other Unix / Unix-like:** compatible systems from other Unix or Unix-like families, including illumos-based systems such as OmniOS or OpenIndiana where technically appropriate.
+- **Other operating systems:** any other compatible OS whose installer, UEFI support, Secure Boot behavior, hardware support and boot manager allow coexistence with FX11.
+
+Ubuntu is not part of FX11's example/recommendation list.
 
 For the FX11 + Other OS automatic mode the user must be able to choose the amount of disk space allocated to **FX11** versus **Other OS**, preferably by both a visual slider and exact size fields. The slider labels must be:
 
 **FX11** ↔ **Other OS**
 
-FX11 must not assume the second operating system is Linux. It should not create ext4, Btrfs, swap, `/home`, BSD-specific partitions or any other OS-specific layout. The **Other OS** area remains unallocated so the installer of the selected operating system can create the filesystems and partitions it actually requires.
+FX11 must not assume what the second operating system is. It should not create ext4, Btrfs, swap, `/home`, BSD-specific partitions or any other OS-specific layout. The **Other OS** area remains unallocated so the installer of the selected operating system can create the filesystems and partitions it actually requires.
 
 Before any destructive automatic partitioning, FX11 Installer must:
 
