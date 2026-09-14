@@ -69,9 +69,10 @@ mounted+=("$ROOTFS/sys")
 mount -t devpts devpts "$ROOTFS/dev/pts"
 mounted+=("$ROOTFS/dev/pts")
 
-if [[ -e "$ROOTFS/etc/resolv.conf" ]]; then
-    cp -a "$ROOTFS/etc/resolv.conf" "$ROOTFS/etc/resolv.conf.fx-original" || true
+if [[ -e "$ROOTFS/etc/resolv.conf" || -L "$ROOTFS/etc/resolv.conf" ]]; then
+    cp -a "$ROOTFS/etc/resolv.conf" "$ROOTFS/etc/resolv.conf.fx-original"
 fi
+rm -f "$ROOTFS/etc/resolv.conf"
 cp -L /etc/resolv.conf "$ROOTFS/etc/resolv.conf"
 
 echo "[3/7] Installing Calamares prototype dependencies inside LMDE..."
@@ -87,8 +88,9 @@ chroot "$ROOTFS" /usr/bin/env DEBIAN_FRONTEND=noninteractive bash -lc '
     rm -rf /var/lib/apt/lists/*
 '
 
-if [[ -f "$ROOTFS/etc/resolv.conf.fx-original" ]]; then
-    mv -f "$ROOTFS/etc/resolv.conf.fx-original" "$ROOTFS/etc/resolv.conf"
+rm -f "$ROOTFS/etc/resolv.conf"
+if [[ -e "$ROOTFS/etc/resolv.conf.fx-original" || -L "$ROOTFS/etc/resolv.conf.fx-original" ]]; then
+    mv "$ROOTFS/etc/resolv.conf.fx-original" "$ROOTFS/etc/resolv.conf"
 fi
 
 for (( i=${#mounted[@]}-1; i>=0; i-- )); do
