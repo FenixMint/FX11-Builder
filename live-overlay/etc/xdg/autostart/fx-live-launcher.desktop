@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=FX Live Launcher
+Comment=Choose FX11, FX Linux or live tools
+Exec=/usr/local/bin/fx-live-launcher
+Terminal=false
+X-GNOME-Autostart-enabled=true
+X-GNOME-Autostart-Delay=2
+OnlyShowIn=X-Cinnamon;GNOME;MATE;KDE;
