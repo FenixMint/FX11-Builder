@@ -1,0 +1,37 @@
+---
+componentName: fx11
+welcomeStyleCalamares: false
+welcomeExpandingLogo: true
+windowExpanding: normal
+windowSize: 920px,620px
+windowPlacement: center
+sidebar: widget
+navigation: widget
+
+strings:
+    productName:         FX11
+    shortProductName:    FX11
+    version:             Prototype
+    shortVersion:        PoC
+    versionedName:       FX11 Installer
+    shortVersionedName:  FX11
+    bootloaderEntryName: FX11
+    productUrl:          ""
+    supportUrl:          ""
+    knownIssuesUrl:      ""
+    releaseNotesUrl:     ""
+    donateUrl:           ""
+
+images: {}
+
+style:
+   SidebarBackground:        "#182629"
+   SidebarText:              "#FFFFFF"
+   SidebarTextCurrent:       "#FFFFFF"
+   SidebarBackgroundCurrent: "#2F6F67"
+
+slideshow: []
+uploadServer:
+    type: none
+    url: ""
+    sizeLimit: 0
