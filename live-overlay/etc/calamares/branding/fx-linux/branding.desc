@@ -1,0 +1,37 @@
+---
+componentName: fx-linux
+welcomeStyleCalamares: false
+welcomeExpandingLogo: true
+windowExpanding: normal
+windowSize: 920px,620px
+windowPlacement: center
+sidebar: widget
+navigation: widget
+
+strings:
+    productName:         FX Linux
+    shortProductName:    FX Linux
+    version:             Prototype
+    shortVersion:        PoC
+    versionedName:       FX Linux Installer
+    shortVersionedName:  FX Linux
+    bootloaderEntryName: FX Linux
+    productUrl:          ""
+    supportUrl:          ""
+    knownIssuesUrl:      ""
+    releaseNotesUrl:     ""
+    donateUrl:           ""
+
+images: {}
+
+style:
+   SidebarBackground:        "#182629"
+   SidebarText:              "#FFFFFF"
+   SidebarTextCurrent:       "#FFFFFF"
+   SidebarBackgroundCurrent: "#2F6F67"
+
+slideshow: []
+uploadServer:
+    type: none
+    url: ""
+    sizeLimit: 0
