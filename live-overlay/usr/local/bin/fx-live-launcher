@@ -1,0 +1,59 @@
+#!/bin/sh
+set -eu
+
+mode=""
+for token in $(cat /proc/cmdline 2>/dev/null || true); do
+    case "$token" in
+        fx.mode=*) mode=${token#fx.mode=} ;;
+    esac
+done
+
+case "$mode" in
+    windows|fx11)
+        choice="fx11"
+        ;;
+    linux|fxlinux)
+        choice="linux"
+        ;;
+    live|try)
+        exit 0
+        ;;
+    *)
+        if command -v zenity >/dev/null 2>&1; then
+            choice=$(zenity --list \
+                --title="FX" \
+                --text="Choose what you want to do" \
+                --column="Mode" \
+                --column="Description" \
+                --hide-header \
+                --width=620 \
+                --height=320 \
+                "fx11" "Install FX11" \
+                "linux" "Install FX Linux" \
+                "live" "Try FX / system tools" || true)
+        else
+            choice="live"
+        fi
+        ;;
+esac
+
+case "$choice" in
+    fx11)
+        profile="/etc/fx/calamares/fx11"
+        ;;
+    linux)
+        profile="/etc/fx/calamares/linux"
+        ;;
+    *)
+        exit 0
+        ;;
+esac
+
+if ! command -v calamares >/dev/null 2>&1; then
+    if command -v zenity >/dev/null 2>&1; then
+        zenity --error --title="FX" --text="Calamares is not installed in this FX Live prototype."
+    fi
+    exit 1
+fi
+
+exec pkexec calamares -c "$profile"
