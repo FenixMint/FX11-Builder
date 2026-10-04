@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <rect x="8" y="8" width="240" height="240" rx="48" fill="#0a1729" stroke="#7893b9" stroke-width="6"/>
+  <text x="128" y="112" text-anchor="middle" fill="#f4f8ff" font-family="DejaVu Sans, sans-serif" font-size="72" font-weight="700">FX</text>
+  <text x="128" y="176" text-anchor="middle" fill="#67cfff" font-family="DejaVu Sans, sans-serif" font-size="42" font-weight="700">OS</text>
+</svg>
