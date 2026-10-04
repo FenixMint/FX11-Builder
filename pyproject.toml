@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Build custom Windows 11 installation images on Linux"
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "MIT"}
+license = {text = "MPL-2.0"}
 authors = [{name = "FX11 Builder contributors"}]
 dependencies = []
 
