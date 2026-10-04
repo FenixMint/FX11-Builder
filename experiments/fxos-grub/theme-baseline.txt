@@ -1,0 +1,91 @@
+# FX OS GRUB theme prototype
+# Derived from the Fedora/KDE Breeze GRUB theme as an initial working baseline.
+#
+# IMPORTANT:
+# - This is not the final FX OS layout.
+# - background.png is external artwork.
+# - Fedora BLS / Windows / UEFI entries must remain dynamic.
+# - Do not hand-edit generated grub.cfg to fit this theme.
+
+# SPDX-FileCopyrightText: 2016 Harald Sitter <sitter@kde.org>
+# SPDX-FileCopyrightText: 2025 Sébastien Bouchard <sebastjava@hotmail.ca>
+# SPDX-License-Identifier: GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
+
+title-text: ""
+title-font: "Unifont Regular 14"
+message-font: "Unifont Regular 14"
+message-color: "#7f8c8d"
+message-bg-color: "#4d4d4d"
+desktop-color: "#000000"
+desktop-image: "background.png"
+
+terminal-left: "0"
+terminal-top: "0"
+terminal-width: "100%"
+terminal-height: "100%"
+terminal-border: "0"
+
++ label {
+    top = 50%-225
+    left = 0%
+    width = 100%
+    text = "Select Operating System"
+    align = "center"
+    font = "Unifont Bold 16"
+    color = "#ffffff"
+}
+
++ boot_menu {
+    left = 50%-400
+    width = 800
+    top = 50%-150
+    height = 200
+    menu_pixmap_style = "roundedsquare_*.png"
+
+    icon_width = 4
+    icon_height = 0
+
+    item_height = 33
+    item_padding = 1
+    item_icon_space = 0
+    item_spacing = 1
+    item_font = "Unifont Regular 16"
+    item_color = "#7f8c8d"
+    selected_item_font = "Unifont Bold 16"
+    selected_item_color = "#ffffff"
+}
+
++ vbox {
+    left = 50%-200
+    top = 50%+113
+    width = 400
+    + label { width = 400 align = "center" color = "#7f8c8d" font = "Unifont Regular 14" text = "[Enter] Boot the selected OS" }
+    + label { width = 400 align = "center" color = "#7f8c8d" font = "Unifont Regular 14" text = "[Up and Down Key] navigation" }
+    + label { width = 400 align = "center" color = "#7f8c8d" font = "Unifont Regular 14" text = "[E] Edit Selection" }
+    + label { width = 400 align = "center" color = "#7f8c8d" font = "Unifont Regular 14" text = "[C] GRUB Command Line" }
+}
+
++ progress_bar {
+    id = "__timeout__"
+    left = 0
+    top = 100%-32
+    width = 100%
+    height = 32
+    show_text = false
+    bar_style = "progress_bar_*.png"
+    highlight_style = "progress_bar_hl_*.png"
+}
+
++ progress_bar {
+    id = "__timeout__"
+    left = 50%-200
+    top = 50%+66
+    width = 400
+    height = 19
+    show_text = true
+    font = "Unifont Regular 14"
+    text_color = "#7f8c8d"
+    align = "center"
+    text = "@TIMEOUT_NOTIFICATION_MIDDLE@"
+    bar_style = "progress_bar2_*.png"
+}
