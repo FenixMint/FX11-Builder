@@ -106,3 +106,16 @@ Expected later split:
 - independent repositories for reusable components such as Fenix Night Light.
 
 Do not merge this prototype branch into FX11 Builder `main` as a permanent feature.
+
+
+## Current checkpoint
+
+First real hardware boot of the FX OS GRUB prototype succeeded on 2026-10-04.
+
+See:
+
+- `CHECKPOINT-2026-10-04.md` for the tested state, remaining visual work and boot-layer decisions.
+- `theme.txt` for the working 1080p prototype theme.
+- `ASSETS.md` for the validated artwork identities and SHA256 hashes.
+
+The prototype remains on this staging branch only and is not intended for merge into FX11 Builder `main`.
