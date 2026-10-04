@@ -1,0 +1,77 @@
+# FX OS GRUB Theme
+# 1080p baseline / Mint-inspired structure
+# Fedora BLS compatible
+
+title-text: ""
+message-font: "FXOS Regular 24"
+message-color: "#aab7c8"
+message-bg-color: "#101722"
+
+desktop-color: "#000000"
+desktop-image: "background.png"
+desktop-image-scale-method: "crop"
+desktop-image-h-align: "center"
+desktop-image-v-align: "center"
+
+terminal-left: "0"
+terminal-top: "0"
+terminal-width: "100%"
+terminal-height: "100%"
+terminal-border: "0"
+
++ boot_menu {
+    left = 15%
+    width = 70%
+
+    top = 54%
+    height = 34%
+
+    menu_pixmap_style = "roundedsquare_*.png"
+
+    icon_width = 52
+    icon_height = 52
+    item_icon_space = 18
+
+    item_height = 60
+    item_padding = 8
+    item_spacing = 4
+
+    item_font = "FXOS Regular 24"
+    item_color = "#d4deea"
+
+    selected_item_font = "FXOS Bold 28"
+    selected_item_color = "#ffffff"
+}
+
++ progress_bar {
+    id = "__timeout__"
+
+    left = 35%
+    top = 90%
+    width = 30%
+    height = 22
+
+    show_text = true
+
+    font = "FXOS Regular 24"
+    text_color = "#b7c8dc"
+
+    align = "center"
+
+    text = "@TIMEOUT_NOTIFICATION_MIDDLE@"
+
+    bar_style = "progress_bar2_*.png"
+}
+
++ label {
+    left = 5%
+    top = 95%
+    width = 90%
+
+    align = "center"
+
+    font = "FXOS Regular 24"
+    color = "#b7c8dc"
+
+    text = "[↑ ↓] Wybierz system     [Enter] Uruchom     [E] Edytuj wpis     [C] Wiersz poleceń"
+}
