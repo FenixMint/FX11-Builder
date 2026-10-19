@@ -115,6 +115,8 @@ First real hardware boot of the FX OS GRUB prototype succeeded on 2026-10-04.
 See:
 
 - `CHECKPOINT-2026-10-04.md` for the tested state, remaining visual work and boot-layer decisions.
+
+- `CHECKPOINT-2026-10-19-DISPLAY-LID.md` for the verified external-monitor, closed-lid, battery and COSMIC/login behavior on the ThinFedora + FX11 dual-boot reference machine.
 - `theme.txt` for the working 1080p prototype theme.
 - `ASSETS.md` for the validated artwork identities and SHA256 hashes.
 
