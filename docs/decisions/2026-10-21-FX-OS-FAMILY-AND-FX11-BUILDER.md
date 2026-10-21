@@ -1,5 +1,8 @@
 # OWNER decision — FX OS family and FX11 Builder direction (2026-10-21)
 
+> **OWNER CLARIFICATION — 2026-10-21, overall FX project priority:** **P1 FX Linux (Fedora KDE first, LMDE possibly later)**; **P2 FX11 Builder running on Windows**; **P3 FX11 Builder running on Linux**. The earlier *Windows-first* sequence applies **within FX11 builder development only**, not to the overall FX project portfolio. Previous historical content below is preserved. See [the latest FX Linux-first priority decision](https://github.com/FenixMint/FX11-Builder/blob/main/docs/decisions/2026-10-21-FX-LINUX-FIRST-PORTFOLIO-PRIORITY.md).
+
+
 Status: **OWNER DECISION (direction)** + **PLANNED (implementation)**. Additive project record; preserves previous architecture, source code, historical decisions, and checkpoints.
 
 ## Source and interpretation
