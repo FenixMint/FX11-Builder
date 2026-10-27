@@ -139,3 +139,19 @@ OWNER provided a full screenshot of V3 with three compact columns (`\${offset 45
 **Candidate config:** `kde-adaptation/fenixsystem/fenixsystem-kde.conf`, compact three-column spacing and no `own_window_hints`; GitHub comment updated to note visual confirmation. OWNER's local live `~/.config/conky/fenixsystem-kde.conf` may still be older; V3 was launched from an independently downloaded test file.
 
 **Next logical step (not yet run):** promote reviewed V3 to live per-user Conky config, preserving older live profile with a single-file backup, then optionally enable a **new** KDE-only desktop autostart `fenixsystem-kde.desktop` after checking no legacy `fenix-conky.desktop` or duplicate exists. Source template saved as `kde-adaptation/fenixsystem/fenixsystem-kde.desktop` with 8-second login delay. Neither new startup entry nor profile promotion has been performed on OWNER's machine. Do not change KDE Night Color 5000 K, TuneD balanced, ZRAM or boot-related files.
+
+
+## FenixSystem KDE V3 installed and autostart entry created — OWNER terminal
+
+OWNER ran the staged promotion/autostart command on Fedora 44 KDE and reported the terminal completion messages:
+
+```
+===== FENIXSYSTEM KDE V3 =====
+Konfiguracja V3 zainstalowana.
+Autostart KDE włączony na następne logowanie.
+Poprzednia konfiguracja zachowana.
+```
+
+The executed command checked both helper scripts as executable, `conky` present, absence of conflicting old/new startup desktop files, downloaded a pinned revision of `fenixsystem-kde.conf` and `fenixsystem-kde.desktop`, validated CPU layout and BAT0 config, then installed `~/.config/conky/fenixsystem-kde.conf` and `~/.config/autostart/fenixsystem-kde.desktop`. It also backed up any existing live config to a dated file. OWNER's output shows successful completion of these steps; no need to run the installer again.
+
+**Acceptance status:** FenixSystem KDE V3 was already visually verified **in foreground** on KWin Wayland in the previous screenshot. Persistent configuration and autostart are now **installed according to OWNER's reported terminal output**, but **fresh KDE login behavior remains NOT TESTED**. Next: log out and log back in (reboot not required), check FenixSystem appears after the 8-second startup delay; only if missing investigate `~/.config/autostart/fenixsystem-kde.desktop`, `pgrep -af conky` and user journal. Avoid duplicate manual Conky instances during the acceptance check. No evidence of changing Night Color 5000 K, TuneD balanced, zram 8 GiB or EFI/GRUB. Original COSMIC handoff files remain in staging/private archive.
