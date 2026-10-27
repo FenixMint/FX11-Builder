@@ -61,3 +61,21 @@ OWNER then extracted this archive into `~/FX-Linux-Odzysk` (separate staging fol
 **Confirmed:** correct archive and FenixSystem source files exist on Fedora KDE in staging. **Not yet done:** inspect actual contents, install Conky, test sensors and XWayland window behavior, activate autostart, restore any config into live `~/.config`. Do not automatically import COSMIC configs. Keep KDE native Night Color at OWNER-preferred 5000 K.
 
 Next: inspect three source files as read-only text (after OWNER redacts any secrets) to identify runtime dependencies, actual Conky window settings and autostart commands before planning a minimally invasive KDE-specific restore.
+
+## FenixSystem source inspected and KDE candidate profile prepared
+
+OWNER displayed the **actual contents** of three recovered files from archived Fedora COSMIC:
+
+- `conky.conf` (93 lines) already uses `out_to_wayland = true`, `out_to_x = false`, a top-right window, a detailed 12-thread CPU table, RAM/SSD, external sensor script, battery BAT0 and fixed network interface `wlp6s0`.
+- `fenix-sensors.sh` (19 lines) reads `k10temp`, `amdgpu`, `nvme` and `thinkpad` via hwmon without missing-sensor guards.
+- `fenix-conky.desktop` (8 lines) runs `sleep 3; exec conky -c ~/.config/conky/conky.conf`, `TryExec=/usr/bin/conky`.
+
+All three source files were recovered to staging; not yet active under KDE. Fedora 44 official `conky-1.22.2-3.fc44` was confirmed externally as built with Wayland support: https://packages.fedoraproject.org/pkgs/conky/conky/fedora-44.html .
+
+Prepared isolated **KDE test candidate**, preserving original behavior but not copied to OWNER's running system:
+- `kde-adaptation/fenixsystem/fenix-sensors-kde.sh` — guarded hwmon reads, `--` fallback;
+- `kde-adaptation/fenixsystem/fenix-network-kde.sh` — default-route network interface, no hardcoded `wlp6s0`;
+- `kde-adaptation/fenixsystem/fenixsystem-kde.conf` — Wayland profile with 12-thread layout, helpers, battery `all`; no autostart;
+- `kde-adaptation/fenixsystem/README.md` — testing instructions.
+
+**Still required**: install Conky on actual Fedora KDE, execute `bash -n` on downloaded helper scripts, test window layering under KWin/Wayland, verify hardware sensors and then decide whether to enable a KDE autostart. This is NOT yet completed or accepted by OWNER. Preserve KDE Night Color 5000 K and existing TuneD `balanced` and ZRAM.
