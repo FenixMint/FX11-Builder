@@ -79,3 +79,7 @@ Prepared isolated **KDE test candidate**, preserving original behavior but not c
 - `kde-adaptation/fenixsystem/README.md` — testing instructions.
 
 **Still required**: install Conky on actual Fedora KDE, execute `bash -n` on downloaded helper scripts, test window layering under KWin/Wayland, verify hardware sensors and then decide whether to enable a KDE autostart. This is NOT yet completed or accepted by OWNER. Preserve KDE Night Color 5000 K and existing TuneD `balanced` and ZRAM.
+
+## Pobranie plikow FenixSystem KDE - 2026-10-27 18:15
+
+OWNER potwierdzil udany automatyczny download do ~/FX-Linux-Odzysk/kde-fenixsystem/: fenix-network-kde.sh (672 B), fenix-sensors-kde.sh (995 B), fenixsystem-kde.conf (ok. 2.1 KiB). Pliki maja tryb -rw-------, dlatego na etapie diagnostyki skrypty uruchamiamy przez bash. Poprzedni skrypt pobierajacy zakonczyl sprawdzanie skladni obu skryptow bez bledu. To jeszcze nie instalacja Conky, test czujnikow ani uruchomienie autostartu. Nastepny krok: sprawdzenie output obu skryptow oraz nproc, pozniej test manualny Conky bez autostartu.
