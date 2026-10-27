@@ -52,7 +52,7 @@ W szczególności grafiki GRUB, czcionki PF2 i źródła Conky trzeba potwierdzi
 
 ## Status wykonania
 
-**SOURCE PREPARED / NOT RUN ON THINKPAD / NO CAPTURE VERIFIED.** Zmodyfikowano skrypt i dokumentację według aktualnego OWNER. Nie ma jeszcze potwierdzenia, że konfiguracje zostały skopiowane na FX11. Każda kontrola (np. wykonanie skryptu, test kontrolny) powinna być raportowana wyłącznie jeśli faktycznie nastąpiła.
+**SOURCE PREPARED / SANDBOX TESTED / NOT RUN ON THINKPAD / NO OWNER BACKUP VERIFIED.** Zweryfikowano identyczność lokalnego skryptu i pliku GitHub po Git blob SHA (`f076672f538d9c97dc4745503c5f2bdaa0b26794`). `bash -n` PASS; jako zwykły użytkownik w izolowanym kontenerze Linux: `--dry-run` PASS, `--capture` na odrębnie zamontowanym testowym tmpfs PASS, `--verify` z sumami SHA-256 PASS; archiwum użytkownika zawierało wyłącznie sztuczne `conky.conf` i `config.ini` w profilu testowym. Nie testowano na prawdziwej partycji NTFS FX11, ani na ThinkPadzie, ani z jego konfiguracją GRUB. Nie ma jeszcze potwierdzenia, że ustawienia OWNER skopiowano na FX11.
 
 To narzędzie znajduje się tymczasowo na gałęzi `work/fx-linux-pre-kde-preservation-2026-10-27` w repozytorium FX11 Builder i nie oznacza automatycznej integracji FX Linux z FX11.
 
