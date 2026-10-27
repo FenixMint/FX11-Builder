@@ -68,3 +68,20 @@ Ten dokument utrwala **ustalenia audytu**, bez modyfikowania istniejących modu�
 - [Instrukcja i bramki bezpieczeństwa](https://github.com/FenixMint/FX11-Builder/blob/work/fx-linux-pre-kde-preservation-2026-10-27/tools/fx-linux-preserve/README.md)
 
 Skrypt przechodzi `bash -n`, syntetyczny dry-run, lokalny test archiwizacji i kontrolę `sha256sum --check` w oddzielonym środowisku Linux, **ale nie był uruchomiony na ThinkPadzie OWNER**. Nie mamy jeszcze rzeczywistych archiwów ani potwierdzonego wyniku odczytu `/boot/grub2/themes/fxos`, lokalnego Conky czy plików graficznych. Fizycznie oddzielny nośnik oraz osobna pełna kopia danych osobistych pozostają warunkami przed reinstalacją. Prywatnych dumpów nie wysyłać do publicznego GitHub. Dokumentacja tego procesu nie stanowi zgody na formatowanie partycji Windows/ESP lub innych dysków.
+
+## OWNER correction — 2026-10-27: only selected FX Linux settings on FX11 partition
+
+**OWNER DECISION — supersedes the destination/scope instructions of the immediately preceding backup-tool update, not the historical audit:**
+
+> Nie kopiujemy systemu. Zabezpieczamy ustawienia. Konkretne konfiguracje trafią na partycję FX11. Bez rozbudowanego szyfrowania.
+
+Implementation update in temporary branch `work/fx-linux-pre-kde-preservation-2026-10-27`:
+- Config-only allowlist, no image, no complete home, no broad system archive. Preserve FX Linux Conky/FenixSystem, GRUB visuals, COSMIC display config, Fenix Night Light, relevant KDE/GTK visuals, logind and tuning config, simple package/service diagnostic lists.
+- OWNER-chosen target: a separate folder on mounted, writable **FX11 partition**, including when on same physical disk as Fedora. No requirement for an external disk, BitLocker, archive encryption, or a full-system image.
+- No system mutation or installation; operation writes only the selected archive folder on FX11.
+- Explicit safety condition: FX11 Windows/NTFS partition and boot entries **must not be formatted** during Fedora KDE installation. If Windows NTFS is hibernated, unclean or mounted read-only, do not force write access.
+- Local config tar files remain private; GitHub retains only public tooling / non-private documentation.
+
+Source: [skrypt](https://github.com/FenixMint/FX11-Builder/blob/work/fx-linux-pre-kde-preservation-2026-10-27/tools/fx-linux-preserve/fx-linux-preserve.sh) and [current instructions](https://github.com/FenixMint/FX11-Builder/blob/work/fx-linux-pre-kde-preservation-2026-10-27/tools/fx-linux-preserve/README.md).
+
+**Test**: source file Git blob SHA `f076672f538d9c97dc4745503c5f2bdaa0b26794` verified against local copy; `bash -n`, synthetic `--dry-run`, synthetic `--capture` to separately mounted Linux tmpfs, and `--verify` SHA-256 passed as non-root user. NOT tested on actual FX11 NTFS, NOT run on ThinkPad, and no real settings capture yet verified.
