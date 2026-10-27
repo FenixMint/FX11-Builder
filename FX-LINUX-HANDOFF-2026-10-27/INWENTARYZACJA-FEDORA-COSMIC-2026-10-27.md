@@ -54,3 +54,21 @@ Nie kopiować automatycznie całych `/etc/tuned`, `/etc/sysctl.d`, `/etc/modprob
 - Nie należy deklarować, że konfiguracje są już zabezpieczone do reinstalacji.
 
 Nie usuwano ani nie nadpisywano wcześniejszych źródeł lub checkpointów FX Linux.
+
+## Druga inwentaryzacja OWNER — rzeczywiste pliki GRUB i optymalizacji
+
+**OWNER-REPORTED / 2026-10-27; nie jest to kopia zawartości plików.**
+
+Po `sudo ls -la /boot/grub2/themes/fxos/` potwierdzono istnienie pełnego katalogu motywu, wcześniej błędnie oznaczonego jako BRAK zwykłym `[ -e ]` bez praw dostępu. Zawartość: `background.png`, `fxos-bold-28.pf2`, `fxos-regular-24.pf2`, `icons/`, `theme.txt` oraz `theme.txt.bak`, pikmapy `roundedsquare_*.png`, `progress_bar*.png`, pomocniczy `roundedsquare.svg` i `unifont-*.pf2`. **Należy zachować cały katalog**, nie tylko `theme.txt`. Test rozruchu był historyczny; nie uruchamiano go ponownie.
+
+Plik `~/Pobrane/fxos-grub-background.png` ma **SHA-256 `cd06a7f64c654ca47e2a5c7879418d0e881ef50b9b221215b9803bc4f39ecc95`**. Jest to **dokładnie zgodny hash** z `ASSETS.md` historycznego prototypu. Nie dowodzi to jednak automatycznie identyczności `/boot/grub2/themes/fxos/background.png` — jego hasha jeszcze nie porównano.
+
+Katalog `/etc/tuned/`: `active_profile`, `bootcmdline`, `post_loaded_profile`, `ppd_base_profile`, `ppd.conf`, `profile_mode`, `profiles/`, `recommend.d/`, `tuned-main.conf`. Aktywny profil z pierwszej inwentaryzacji: `balanced-battery`; **nie wiadomo, które ustawienia są autorskie**.
+
+`/etc/sysctl.d/` zawiera symlink `99-sysctl.conf -> ../sysctl.conf`. Nie udowodniono ręcznej modyfikacji.
+
+`/etc/modprobe.d/` zawiera plik `disable-webcam.conf` o wielkości 19 B i dacie modyfikacji z początku października. To **ważny kandydat na indywidualną zmianę**, ale nie analizowano jeszcze zawartości, zasadności ani skutków. Pozostałe wpisy to m.in. `batman-adv-blacklist.conf`, `firewalld-sysctls.conf`, `floppy-blacklist.conf`, `kvm.conf`, `l2tp_*blacklist.conf`, `lockd.conf`, `nvdimm-security.conf`, `rds-blacklist.conf`, `tuned.conf`, `vhost.conf`. Nie wnioskować z samych nazw, że wszystkie są FX-owned.
+
+**Aktualna instrukcja OWNER:** jedno archiwum `.tar.gz` z konkretnych źródeł (Conky, sensory, autostart, GRUB kompletny, tło o potwierdzonym SHA, Fenix Night Light jeśli obecny, konfiguracja monitora/klapy, `/etc/tuned`, `/etc/sysctl.d` z `/etc/sysctl.conf`, `/etc/modprobe.d`), plus plik tekstowy z opisem modyfikacji i wynikami stanu. OWNER sam przeniesie archiwum na FX11, **bez automatycznego montowania/kopiowania, szyfrowania ani backupu systemu**. Nie wrzucać prywatnego archiwum na GitHub.
+
+**Do potwierdzenia po wykonaniu:** rzeczywisty manifest zawartości utworzonego archiwum, rozmiar, brak błędów `tar`, fizyczny transfer na FX11. Tych zdarzeń jeszcze nie stwierdzono.
