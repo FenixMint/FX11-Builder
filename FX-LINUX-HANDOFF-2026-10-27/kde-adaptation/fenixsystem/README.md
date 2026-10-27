@@ -36,3 +36,34 @@ OWNER ustawił natywny Night Color KDE na **5000 K**, TuneD na `balanced`, zram 
 Źródła potwierdzające wsparcie Conky Wayland w Fedora 44: https://packages.fedoraproject.org/pkgs/conky/conky/fedora-44.html ; opcje Conky: https://conky.cc/config_settings .
 
 Nie wykonano testu w sesji użytkownika ani instalacji pakietów.
+
+## Automatyczne pobranie trzech plików (OWNER request)
+
+Zamiast ręcznego pobierania, OWNER może użyć terminala Fedory KDE. Pobieramy z **przypiętego commitu** `f403cb2dd9c4117f6242dce50219f5c8e4816727`, aby rezultat nie zależał od późniejszych aktualizacji gałęzi.
+
+```bash
+bash <<'BASH'
+set -euo pipefail
+BASE="https://raw.githubusercontent.com/FenixMint/FX11-Builder/f403cb2dd9c4117f6242dce50219f5c8e4816727/FX-LINUX-HANDOFF-2026-10-27/kde-adaptation/fenixsystem"
+DEST="$HOME/FX-Linux-Odzysk/kde-fenixsystem"
+mkdir -p "$DEST"
+for FILE in fenix-sensors-kde.sh fenix-network-kde.sh fenixsystem-kde.conf; do
+    if [[ -e "$DEST/$FILE" ]]; then
+        printf 'Pomijam juz istniejacy plik: %s\n' "$FILE"
+        continue
+    fi
+    TEMP=$(mktemp "$DEST/.download.XXXXXX")
+    if curl -fLsS --retry 2 --proto '=https' "$BASE/$FILE" -o "$TEMP"; then
+        mv -- "$TEMP" "$DEST/$FILE"
+    else
+        rm -f -- "$TEMP"
+        exit 1
+    fi
+done
+bash -n "$DEST/fenix-sensors-kde.sh"
+bash -n "$DEST/fenix-network-kde.sh"
+ls -lh "$DEST"
+BASH
+```
+
+To tylko **pobiera pliki do staging**, nie wykonuje żadnego skryptu, nie instaluje Conky, nie aktywuje autostartu i nie zmienia konfiguracji. Istniejących plików nie nadpisuje. `bash -n` to wyłącznie sprawdzanie składni skryptów; nie testuje ich działania na czujnikach.
