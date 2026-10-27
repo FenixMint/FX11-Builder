@@ -198,3 +198,13 @@ Read-only terminal results from OWNER (2026-10-27):
 - Historical SHA-256 checksums in `prototypes/fx-linux-grub/ASSETS.md`: wallpaper `cd06a7f64c654ca47e2a5c7879418d0e881ef50b9b221215b9803bc4f39ecc95`, `icons/fedora.png` `b07395a0c6990252fe4b45e82b43589d5043231ea97ac52bb6978991acc8a14d`, `icons/windows.png` `9011edce08035aed6e8e57d419706309100815051b6cb9a66347aeace4fb40ea`. Next optional **read-only** step: compare the staged files against those expected SHA before any use.
 - Any actual deployment should be limited to a separately reviewed theme directory and narrow edits in `/etc/default/grub`, with preserved copies, idempotent checks and rollback, preserving BLS, existing Windows entry, and 5-second timeout; the current `grub.cfg` must be backed up and regenerated in the Fedora-authorized place only after explicit OWNER approval. Avoid all changes in ESP/UEFI NVRAM, `grub2-install`, manual `grub.cfg` edits or changes to `/boot/loader/entries`. Check generated `grub.cfg` with `grub2-script-check` again before reboot.
 - Decision gate remains **OWNER approval** for bootloader changes, not implied merely by having passed read-only audit.
+
+
+## 2026-10-27: OWNER approves FX OS GRUB theme restore
+
+OWNER approved only the controlled restoration of the previously tested FX OS GRUB visual theme to the present Fedora KDE system.
+Before approval, SHA-256 verification of original theme background and Fedora/Windows icons passed (3/3).
+Read-only tests established Fedora BLS entries, rescue, Windows Boot Manager, UEFI firmware menu handling and successful grub2-script-check.
+Authorized scope is narrow: backups, copying the recovered theme, graphics configuration and validating newly generated GRUB menus with rollback.
+No permission to alter EFI, UEFI boot order, partitions, kernel BLS entries or Windows installation.
+Approval recorded; this document does NOT mean a local restore or reboot has occurred.
