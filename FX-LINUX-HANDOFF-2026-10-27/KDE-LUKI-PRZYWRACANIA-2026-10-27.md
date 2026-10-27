@@ -123,3 +123,15 @@ OWNER executed read-only power-profile inventory on Fedora 44 KDE after COSMIC m
 **Recommended state:** keep default KDE integrated TuneD/`tuned-ppd` and `balanced` selection; no reason to unconditionally force the old COSMIC `balanced-battery` via `tuned-adm` or copy `/etc/tuned`. Owner's currently active `balanced` is consistent with AC mode but **we have not confirmed actual AC/charging state or runtime transitions**. Read-only verification possible: `cat /sys/class/power_supply/AC/online`, `systemctl is-active tuned-ppd`, `tuned-adm active`, and repeat in normal battery use if desired; don't require abrupt power removal.
 
 Status: **configuration equivalence likely / runtime switching untested**. No change applied to power profiles by this analysis. Next audit target: old `/etc/sysctl.conf` and `/etc/sysctl.d`, modem/camera blacklist `uvcvideo` and GRUB theme to be addressed separately with owner permission.
+
+
+## OWNER read-only comparison — sysctl.conf and tuned-main.conf
+
+OWNER przekazał wyniki porównania z rozpakowanego COSMIC (`~/FX-Linux-Odzysk/etc`) z działającą Fedorą KDE:
+
+- `/etc/sysctl.conf`: zarówno w archiwum COSMIC, jak i bieżącym KDE test `grep -En '^[[:space:]]*[^#;[:space:]][^=]*='` zwrócił `Brak aktywnych wpisów`. **Zakres badania: ten plik, nie wszystkie drop-in sysctl systemu.**
+- `/etc/tuned/tuned-main.conf`: widoczne aktywne parametry i numery linii identyczne w obu: `daemon=1`, `dynamic_tuning=0`, `sleep_interval=1`, `update_interval=10`, `recommend_command=1`, `reapply_sysctl=1`, `default_instance_priority=0`, `udev_buffer_size=1MB`, `log_file_count=2`, `log_file_max_size=1MB`, `startup_udev_settle_wait=0`. Ten wynik nie dowodzi identyczności komentarzy ani każdego bajtu pliku; nie ma wykazanych aktywnych różnic.
+- Stare `etc/sysctl.d/`: `99-sysctl.conf -> ../sysctl.conf` (symlink, nie niezależna niestandardowa reguła). Nie porównywano jeszcze wszystkich innych globalnych katalogów `sysctl.d` na działającej KDE.
+- **Decyzja techniczna na podstawie dostępnych faktów:** nie odtwarzać `sysctl.conf`, `tuned-main.conf` ani starego symlinka z archiwum w ciemno. Nie wykazano utraconych dostosowań w tych konkretnych ustawieniach.
+
+**Następny bezpieczny krok:** read-only sprawdzenie starych i nowych plików `/etc/modprobe.d`, ze szczególnym uwzględnieniem starego `disable-webcam.conf` zawierającego `blacklist uvcvideo`. Tylko OWNER decyduje, czy kamerka ma być blokowana. Potem bezpieczeństwo aktualnego GRUB/EFI/Windows przed ewentualnym przywróceniem wyglądu FX OS. Nie zmieniać działającego FenixSystem, Night Color 5000 K, klapy ani obecnego TuneD.
