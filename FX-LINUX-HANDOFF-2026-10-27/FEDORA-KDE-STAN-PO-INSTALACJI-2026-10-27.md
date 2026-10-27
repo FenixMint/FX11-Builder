@@ -121,3 +121,13 @@ A *new* visual bug was identified in the screenshot: three-column per-thread CPU
 Candidate commit: `08ef36d5316f9367a8900ab61a4c0918d97f0ad9`; path `kde-adaptation/fenixsystem/fenixsystem-kde.conf`. This change is **only in GitHub**; user's running and installed files do not update by themselves.
 
 Next safe action: fetch the candidate config **into a separate named test file** in `~/FX-Linux-Odzysk/kde-fenixsystem`, run foreground `conky -c <test-file>`, confirm no CPU overlap and normal KWin behavior. After owner's explicit visual acceptance, optionally copy updated config to `~/.config/conky/fenixsystem-kde.conf` with a backup, then discuss KDE autostart. No other system changes, no Night Color changes (5000 K), no GRUB changes.
+
+## FenixSystem KDE — zbyt szerokie kolumny CPU V2 i nowy wariant V3
+
+OWNER pokazał zrzut ekranu widocznego i funkcjonalnego panelu Conky (V2) na KDE Wayland: dane czujników, SSD, RAM, bateria, sieć działają i tekst się nie nakłada. Jednak `\${alignr}` ustawia drugą kolumnę procesora przy skrajnej prawej krawędzi monitora, tworząc zbyt szeroką przerwę między dwoma wątkami. OWNER oczekuje **bardziej zwartego układu**.
+
+Przygotowano **V3 z trzema kolumnami** i `\${offset 45}` między polami CPU, bez zależności od `\${goto}` lub `\${alignr}` w tej części. Pozostałe funkcje, brak `own_window_hints`, `BAT0`, skrypty sieci i temperatur oraz status KDE 5000K niezmienione. Zapisano w commicie `4f08721239a41aeb8d306110ea2414c03bfac130` w `kde-adaptation/fenixsystem/fenixsystem-kde.conf`.
+
+Uzasadnienie: Conky oficjalnie dokumentuje `offset` jako poziome przesunięcie o piksele, a upstream posiada otwarte zgłoszenie niestabilności `goto` pod Waylandem: https://conky.cc/variables ; https://github.com/brndnmtthws/conky/issues/1671 .
+
+**Nie deklarować, że V3 jest już poprawny wizualnie**: wymagany test na sesji OWNER. Pobierać tylko tę konfigurację do odrębnego pliku `fenixsystem-v3.*.conf` i uruchamiać Conky bez autostartu. Nie nadpisywać zatwierdzonych lokalnych wersji ani ustawień.
