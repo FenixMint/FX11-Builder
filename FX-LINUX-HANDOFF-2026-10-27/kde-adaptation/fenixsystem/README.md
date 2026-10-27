@@ -1,6 +1,6 @@
 # FenixSystem — profil testowy Fedora 44 KDE Plasma Wayland
 
-**Status: podstawowe czujniki, sieć i widoczność Conky na KDE Wayland POTWIERDZONE przez OWNER; poprawiony dwukolumnowy układ CPU wymaga jeszcze testu.** Oryginalne pliki COSMIC pozostają w archiwum i `~/FX-Linux-Odzysk`.
+**Status: podstawowe czujniki, sieć i widoczność Conky na KDE Wayland POTWIERDZONE przez OWNER; wariant V3: kompaktowy trzykolumnowy układ CPU wymaga jeszcze testu.** Oryginalne pliki COSMIC pozostają w archiwum i `~/FX-Linux-Odzysk`.
 
 ## Zmiany względem odzyskanych plików
 
@@ -8,7 +8,7 @@ Wersja zachowuje ten sam układ z prawym górnym rogiem i dwunastoma polami obci
 
 - `fenix-sensors-kde.sh`: czyta `k10temp`, `amdgpu`, `nvme`, `thinkpad` tylko gdy odpowiednie pliki istnieją i są czytelne; w pozostałych przypadkach pokazuje `--`.
 - `fenix-network-kde.sh`: wykrywa interfejs domyślnej trasy IPv4/IPv6; nie zakłada starego `wlp6s0`.
-- `fenixsystem-kde.conf`: zachowuje Conky Wayland i pierwotny rozkład, ale wykorzystuje nowe helpery, `nproc` w nagłówku i **`battery_percent BAT0`** (potwierdzono obecność BAT0). Wątki CPU 1–12 przedstawiono w dwóch kolumnach; `nproc` wynosi **12**.
+- `fenixsystem-kde.conf`: zachowuje Conky Wayland i pierwotny rozkład, ale wykorzystuje nowe helpery, `nproc` w nagłówku i **`battery_percent BAT0`** (potwierdzono obecność BAT0). Wątki CPU 1–12 przedstawiono w V3 w **trzech zwartych kolumnach** z `${offset 45}`; `nproc` wynosi **12**.
 - Na KWin Wayland `own_window_type = 'normal'` jest zachowany, ale usunięto `own_window_hints` zawierające `below`: OWNER potwierdził, że dopiero usunięcie wskazówek pozwoliło zobaczyć widżet na pulpicie. Na Fedora 44 Conky 1.22.2 `out_to_wayland` jest poprawną opcją. Nie używamy opcji z Conky nowszych niż wersja repo Fedora 44.
 
 ## Odczyt i test bez autostartu
@@ -82,3 +82,23 @@ curl -fLsS --proto '=https' "$URL" -o "$TARGET" &&
 ```
 
 Jeśli w tym katalogu plik `fenixsystem-kde-v2.conf` już istnieje, zastosuj inną nazwę lub najpierw sprawdź zawartość, żeby nie utracić ręcznych zmian. Poprawka nie zakłada aktywacji autostartu.
+
+## CPU: poprawka V3 — kompaktny układ (2026-10-27)
+
+OWNER potwierdził obrazem, że V2 z `${alignr}` nie nakłada wątków na siebie, ale zbyt szeroko rozsuwa je po całej szerokości Conky. V3 wraca do 3 kolumn bez problematycznego na KDE Wayland `${goto}`, używając względnych `${offset 45}`.
+
+Test bez nadpisywania lokalnej konfiguracji:
+
+```bash
+DIR="$HOME/FX-Linux-Odzysk/kde-fenixsystem"
+mkdir -p "$DIR"
+TEST=$(mktemp "$DIR/fenixsystem-v3.XXXXXX.conf")
+URL="https://raw.githubusercontent.com/FenixMint/FX11-Builder/4f08721239a41aeb8d306110ea2414c03bfac130/FX-LINUX-HANDOFF-2026-10-27/kde-adaptation/fenixsystem/fenixsystem-kde.conf"
+if curl -fLsS --proto '=https' "$URL" -o "$TEST"; then
+    conky -c "$TEST"
+else
+    rm -f -- "$TEST"
+fi
+```
+
+Wygląd V3 na sprzęcie OWNER wciąż wymaga testu. Nie aktywować autostartu przed potwierdzeniem.
