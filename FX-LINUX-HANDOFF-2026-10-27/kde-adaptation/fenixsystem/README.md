@@ -1,6 +1,6 @@
 # FenixSystem — profil testowy Fedora 44 KDE Plasma Wayland
 
-**Status: podstawowe czujniki, sieć i widoczność Conky na KDE Wayland POTWIERDZONE przez OWNER; wariant V3: kompaktowy trzykolumnowy układ CPU wymaga jeszcze testu.** Oryginalne pliki COSMIC pozostają w archiwum i `~/FX-Linux-Odzysk`.
+**Status: podstawowe czujniki, sieć i widoczność Conky na KDE Wayland POTWIERDZONE przez OWNER; wariant V3: kompaktowy trzykolumnowy układ CPU pokazany na zrzucie OWNER i wizualnie potwierdzony.** Oryginalne pliki COSMIC pozostają w archiwum i `~/FX-Linux-Odzysk`.
 
 ## Zmiany względem odzyskanych plików
 
@@ -101,4 +101,12 @@ else
 fi
 ```
 
-Wygląd V3 na sprzęcie OWNER wciąż wymaga testu. Nie aktywować autostartu przed potwierdzeniem.
+OWNER przesłał zrzut działającej V3: trzy zwarte kolumny CPU nie nachodzą na siebie i widżet pokazuje wszystkie główne pomiary. Autostart pozostaje nieuruchomiony do chwili świadomego włączenia na komputerze.
+
+## Wdrożenie wersji V3 i opcjonalny autostart KDE
+
+Po wizualnej weryfikacji V3 na zrzucie OWNER można zastąpić **tylko** plik `~/.config/conky/fenixsystem-kde.conf`, zachowując jego poprzednią wersję z datą. Stary autostart COSMIC `fenix-conky.desktop` pozostaje wyłączony; nie nadpisywać go, bo może tworzyć duplikaty. Nowy `fenixsystem-kde.desktop` został przygotowany w tym katalogu GitHub, ale w systemie OWNER jeszcze go nie instalowano.
+
+Na komputerze potwierdzić, czy istnieją już wpisy `~/.config/autostart/fenix-conky.desktop` lub `~/.config/autostart/fenixsystem-kde.desktop`. Jeżeli pierwszy istnieje, najpierw przejrzeć jego cel i wyłączyć go świadomie, nie usuwać na ślepo. Używać nowego profilu dla KDE tylko gdy oba skrypty `~/.local/bin/fenix-sensors-kde.sh` i `~/.local/bin/fenix-network-kde.sh` działają (OWNER je przetestował).
+
+Autostart KDE odczekuje 8 sekund i wywołuje `conky -c ~/.config/conky/fenixsystem-kde.conf`. W sesji Wayland nie ma autostart COSMIC; Night Color 5000 K pozostaje natywny KDE. Działania w GitHubie nie instalują zmian na komputerze OWNER.
