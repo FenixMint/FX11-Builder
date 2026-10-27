@@ -47,3 +47,17 @@ Conky pod Wayland/KWin może wymagać odmiennego ustawienia okna/rysowania (naty
 5. Pozostałe optymalizacje, blokadę kamery i motyw GRUB ocenić oddzielnie; nie zmieniać rozruchu ani partycji Windows/FX11 bez osobnej weryfikacji.
 
 **Ten dokument utrwala informacje otrzymane od OWNER. Nie instaluje pakietów ani nie zmienia bieżącego KDE.**
+
+## Owner check — archive verified and FenixSystem staging extracted
+
+OWNER ran `sha256sum -c -` on `~/Pobrane/FX-Linux-Config-20261027-115021.tar.gz` under Fedora KDE, obtaining `DOBRZE` (PASS) against historical checksum `bda592a6cc782c72a57282e9c4f81ebe222b613cbb8b9342c5ec8851e41b7e0b`.
+
+OWNER then extracted this archive into `~/FX-Linux-Odzysk` (separate staging folder). `find` confirmed the following recovered files:
+
+- `~/FX-Linux-Odzysk/home/<local-user>/.config/conky/conky.conf`
+- `~/FX-Linux-Odzysk/home/<local-user>/.local/bin/fenix-sensors.sh`
+- `~/FX-Linux-Odzysk/home/<local-user>/.config/autostart/fenix-conky.desktop`
+
+**Confirmed:** correct archive and FenixSystem source files exist on Fedora KDE in staging. **Not yet done:** inspect actual contents, install Conky, test sensors and XWayland window behavior, activate autostart, restore any config into live `~/.config`. Do not automatically import COSMIC configs. Keep KDE native Night Color at OWNER-preferred 5000 K.
+
+Next: inspect three source files as read-only text (after OWNER redacts any secrets) to identify runtime dependencies, actual Conky window settings and autostart commands before planning a minimally invasive KDE-specific restore.
