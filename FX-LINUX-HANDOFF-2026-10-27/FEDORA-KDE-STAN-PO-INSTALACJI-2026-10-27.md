@@ -83,3 +83,13 @@ Prepared isolated **KDE test candidate**, preserving original behavior but not c
 ## Pobranie plikow FenixSystem KDE - 2026-10-27 18:15
 
 OWNER potwierdzil udany automatyczny download do ~/FX-Linux-Odzysk/kde-fenixsystem/: fenix-network-kde.sh (672 B), fenix-sensors-kde.sh (995 B), fenixsystem-kde.conf (ok. 2.1 KiB). Pliki maja tryb -rw-------, dlatego na etapie diagnostyki skrypty uruchamiamy przez bash. Poprzedni skrypt pobierajacy zakonczyl sprawdzanie skladni obu skryptow bez bledu. To jeszcze nie instalacja Conky, test czujnikow ani uruchomienie autostartu. Nastepny krok: sprawdzenie output obu skryptow oraz nproc, pozniej test manualny Conky bez autostartu.
+
+## KDE FenixSystem — owner runtime read-only tests passed
+
+OWNER wykonał `bash -n` obu pobranych skryptów, wynik: **Składnia OK**. Następnie uruchomił testowo oba skrypty przez `bash` bez instalacji do docelowych ścieżek:
+
+- `fenix-sensors-kde.sh`: CPU TEMP **52°C**, GPU TEMP **44°C**, SSD TEMP **38°C**, FAN **3077 RPM**, APU PPT **11.0 W**; format skryptu zawiera markery Conky `\${alignr}`, co jest oczekiwane.
+- `fenix-network-kde.sh`: wykrył interfejs **wlp6s0** i zwrócił dynamiczne wyrażenia Conky `\${downspeed wlp6s0}` i `\${upspeed wlp6s0}`, również oczekiwane.
+- `nproc`: **12**; układ historycznych 12 wątków nie wymaga na tym sprzęcie zmiany.
+
+**Ocena**: oba skrypty działają na aktualnym KDE bez błędów odczytu. Nie potwierdzono jeszcze działania renderowania Conky, zachowania okna pod KWin Wayland, autostartu ani zainstalowania pakietu `conky`. Następny etap: zainstalować Conky z Fedory (za decyzją OWNER), ręcznie wdrożyć profil o odrębnej nazwie `fenixsystem-kde.conf`, sprawdzić rendering bez autostartu, dopiero potem ewentualnie aktywować autostart. Nie modyfikować Night Color **5000 K**, TuneD `balanced`, ZRAM, GRUB ani rozruchu.
