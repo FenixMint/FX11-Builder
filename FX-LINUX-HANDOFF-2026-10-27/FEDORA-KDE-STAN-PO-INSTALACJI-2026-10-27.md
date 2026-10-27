@@ -131,3 +131,11 @@ Przygotowano **V3 z trzema kolumnami** i `\${offset 45}` między polami CPU, bez
 Uzasadnienie: Conky oficjalnie dokumentuje `offset` jako poziome przesunięcie o piksele, a upstream posiada otwarte zgłoszenie niestabilności `goto` pod Waylandem: https://conky.cc/variables ; https://github.com/brndnmtthws/conky/issues/1671 .
 
 **Nie deklarować, że V3 jest już poprawny wizualnie**: wymagany test na sesji OWNER. Pobierać tylko tę konfigurację do odrębnego pliku `fenixsystem-v3.*.conf` i uruchamiać Conky bez autostartu. Nie nadpisywać zatwierdzonych lokalnych wersji ani ustawień.
+
+## FenixSystem KDE V3 — visual confirmation by OWNER screenshot
+
+OWNER provided a full screenshot of V3 with three compact columns (`\${offset 45}`). All **12 CPU threads** (T01–T12) fit and no labels overlap; compared with V2, the threads are now much closer and follow a balanced three-column layout. The displayed Conky panel also renders RAM, SSD, CPU/GPU/SSD temperature, fan, APU PPT, BAT0 percentage, networking and uptime. Visually, this resolves both the original overlap of `goto` and the excessively spread `alignr` layout. The screenshot is visual evidence, not an explicit OWNER sign-off for autostart or for foreground/background window stacking across KDE activities.
+
+**Candidate config:** `kde-adaptation/fenixsystem/fenixsystem-kde.conf`, compact three-column spacing and no `own_window_hints`; GitHub comment updated to note visual confirmation. OWNER's local live `~/.config/conky/fenixsystem-kde.conf` may still be older; V3 was launched from an independently downloaded test file.
+
+**Next logical step (not yet run):** promote reviewed V3 to live per-user Conky config, preserving older live profile with a single-file backup, then optionally enable a **new** KDE-only desktop autostart `fenixsystem-kde.desktop` after checking no legacy `fenix-conky.desktop` or duplicate exists. Source template saved as `kde-adaptation/fenixsystem/fenixsystem-kde.desktop` with 8-second login delay. Neither new startup entry nor profile promotion has been performed on OWNER's machine. Do not change KDE Night Color 5000 K, TuneD balanced, ZRAM or boot-related files.
