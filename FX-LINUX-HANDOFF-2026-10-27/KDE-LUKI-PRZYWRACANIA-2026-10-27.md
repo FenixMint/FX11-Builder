@@ -32,3 +32,27 @@ Owner słusznie wskazał, że ukończenie FenixSystem nie oznacza ukończenia ca
 ## Co WIEMY, czego NIE WIEMY
 
 Archiwum `FX-Linux-Config-20261027-115021.tar.gz` zostało zweryfikowane na KDE tym samym SHA-256 co wcześniej i rozpakowane do odrębnego `~/FX-Linux-Odzysk`. Potwierdzono trzy własne pliki FenixSystem, pełny lokalny katalog źródeł GRUB był obecny na COSMIC przed migracją, ale jego obecność w obecnym katalogu staging KDE ani stan systemowego GRUB po migracji nie były odrębnie zweryfikowane. Nie twierdzić, że wszystko z COSMIC zostało odtworzone. Nie rekonstruować hipotetycznych optymalizacji z samej nazwy folderu.
+
+
+## Wynik pierwszego porównania archiwum COSMIC z działającą KDE — OWNER
+
+OWNER przekazał odczyt **tylko do odczytu** z nowej Fedory KDE (2026-10-27):
+
+| Sprawdzono | COSMIC w `~/FX-Linux-Odzysk` | KDE obecnie | Interpretacja |
+|---|---|---|---|
+| Klapa | `HandleLidSwitch=suspend`, `HandleLidSwitchExternalPower=ignore`, `HandleLidSwitchDocked=ignore` | brak pliku `/etc/systemd/logind.conf.d/90-thinfedora-lid.conf` | stare własne ustawienia nieprzeniesione; **nie dowodzi to jeszcze aktualnej akcji zamknięcia klapy**, bo PowerDevil/KDE może przejąć obsługę |
+| TuneD | aktywny `balanced-battery` przed reinstalacją | `Current active profile: balanced` | potwierdzona zmiana profilu, niekoniecznie błąd; potrzebna decyzja funkcjonalna |
+| GRUB FX OS | `theme.txt` obecny w archiwum | systemowy `/boot/grub2/themes/fxos/theme.txt` nieobecny przy sprawdzeniu sudo | motyw zachowany, ale **nieprzywrócony** |
+| GRUB settings | historycznie `GRUB_THEME` i `GRUB_GFXMODE` | `grep '^GRUB_(THEME|GFXMODE)='` nic nie zwrócił | brak tych aktywnych linii w `/etc/default/grub`; **nie wyciągać wniosku o stanie wszystkich mechanizmów rozruchu** |
+| Webcam | w archiwum dokładnie `blacklist uvcvideo` | brak `/etc/modprobe.d/disable-webcam.conf` | poprzednia indywidualna blokada modułu nieprzeniesiona; brak pliku nie dowodzi pełnej aktywności kamerki |
+
+**Dodatkowy kontekst techniczny zweryfikowany w dokumentacji:** systemd-logind stosuje różne akcje dla zasilania zewnętrznego i dock/multi-display, ale powłoka graficzna może przejąć zdarzenia pokrywy przez inhibitor `handle-lid-switch`. KDE PowerDevil zarządza akcją zamknięcia pokrywy i odrębnie profilami na baterii/AC. Źródła: https://www.freedesktop.org/software/systemd/man/latest/logind.conf.html oraz https://docs.kde.org/stable_kf6/en/powerdevil/kcontrol/powerdevil/ .
+
+**Kolejność i bezpieczeństwo:**
+1. Odczytowo: `systemd-inhibit --list` (czy KDE przejmuje obsługę klapy), `kscreen-doctor -o` (faktyczny układ monitorów), a w GUI KDE sprawdzić Ustawienia systemowe → Zarządzanie energią, osobno zasilanie sieciowe i bateria. Nie testować zamknięcia klapy przed weryfikacją, jeśli może to przerwać pracę.
+2. Dalej porównać TuneD `balanced` i historyczny `balanced-battery`; nie instalować konkurujących daemona ani nie wymuszać profilu bez pomiarów.
+3. Webcam: zapytać OWNER, czy zachować intencjonalne wyłączenie; **nie przywracać `blacklist uvcvideo` w ciemno**.
+4. GRUB: zweryfikować konfigurację i wpis Windows Boot Manager/UEFI oraz BLS przed jakimikolwiek zapisami w `/boot`, `/etc/default/grub`, EFI lub generowanym `grub.cfg`.
+5. Nie przenosić całego `/etc/tuned`, `/etc/sysctl.d`, `/etc/modprobe.d` ani `outputs.ron` z COSMIC do KDE.
+
+To jest aktualizacja audytu. **Żadnych ustawień na komputerze OWNER nie zmieniono przez tę operację GitHub.**
