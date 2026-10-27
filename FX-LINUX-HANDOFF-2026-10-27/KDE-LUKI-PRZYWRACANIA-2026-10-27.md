@@ -93,3 +93,33 @@ Nadal **nie wiemy**, jak PowerDevil zachowa się przy zamknięciu klapy na samej
 OWNER potwierdził po przejrzeniu obecnego zachowania, że **ustawienia klapy na Fedora KDE są na razie poprawne i nie należy ich zmieniać**. Oznacza to świadome **ZACHOWAĆ OBECNE KDE**, a nie przywracać `/etc/systemd/logind.conf.d/90-thinfedora-lid.conf` z COSMIC. PowerDevil nadal obsługuje zdarzenia pokrywy przez inhibitor, HDMI ma aktywny układ 1680×1050 przy (0,0), eDP jest wyłączony. Nie twierdzić, że przeprowadzono formalny osobny test każdej kombinacji zasilania — decyzja jest oparta na aktualnym działaniu ocenionym przez OWNER.
 
 Następny obszar po decyzji OWNER: TuneD i optymalizacje. KDE ma `tuned` i `tuned-ppd`, aktywny `balanced`; archiwum ze starego COSMIC raportowało `balanced-battery`. Pierwszy etap wyłącznie odczytowy: `tuned-adm list`, `tuned-adm profile_info`, odczyt aktywnego profilu starego staging `etc/tuned/active_profile`, przegląd plików `etc/tuned/profiles` i konfiguracji mapowania `ppd.conf`. Dopiero po porównaniu zdecydować, czy zachować profil `balanced`, czy potrzebna jest adaptacja, bez równoległych menedżerów energii i bez kopiowania całego `/etc/tuned`. Brak zmian w KDE/GRUB/kamerze podczas aktualizacji tego checkpointu.
+
+
+## TuneD / tuned-ppd — comparison completed from OWNER read-only results
+
+OWNER executed read-only power-profile inventory on Fedora 44 KDE after COSMIC migration.
+
+- `tuned-adm active`: `Current active profile: balanced`.
+- `tuned-adm profile_info`: `balanced`, `General non-specialized tuned profile`.
+- `tuned-adm list` includes both `balanced` and `balanced-battery`, where the latter is described as a balanced profile biased toward battery savings.
+- Archived old `etc/tuned/active_profile`: `balanced-battery`.
+- `find ~/FX-Linux-Odzysk/etc/tuned/profiles -maxdepth 3 -type f` printed no custom profile files (scope of that command only; cannot categorically exclude other modifications).
+- Current KDE `/etc/tuned/ppd.conf`:
+  ```ini
+  [main]
+  default=balanced
+  battery_detection=true
+  sysfs_acpi_monitor=true
+  [profiles]
+  power-saver=powersave
+  balanced=balanced
+  performance=throughput-performance
+  [battery]
+  balanced=balanced-battery
+  ```
+
+**Interpretation grounded in upstream TuneD:** the KDE-facing PPD `balanced` selection maps to TuneD `balanced` on AC and TuneD `balanced-battery` on DC when battery detection is enabled. `tuned-ppd` merges the `[battery]` map with the base `[profiles]` map and chooses according to power source. Sources: https://github.com/redhat-performance/tuned/blob/master/tuned/ppd/config.py ; https://github.com/redhat-performance/tuned/blob/master/tuned/ppd/ppd.conf ; https://fedoraproject.org/wiki/Changes/TunedAsTheDefaultPowerProfileManagementDaemon .
+
+**Recommended state:** keep default KDE integrated TuneD/`tuned-ppd` and `balanced` selection; no reason to unconditionally force the old COSMIC `balanced-battery` via `tuned-adm` or copy `/etc/tuned`. Owner's currently active `balanced` is consistent with AC mode but **we have not confirmed actual AC/charging state or runtime transitions**. Read-only verification possible: `cat /sys/class/power_supply/AC/online`, `systemctl is-active tuned-ppd`, `tuned-adm active`, and repeat in normal battery use if desired; don't require abrupt power removal.
+
+Status: **configuration equivalence likely / runtime switching untested**. No change applied to power profiles by this analysis. Next audit target: old `/etc/sysctl.conf` and `/etc/sysctl.d`, modem/camera blacklist `uvcvideo` and GRUB theme to be addressed separately with owner permission.
