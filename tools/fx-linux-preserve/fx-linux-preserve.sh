@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # FX Linux — pre-KDE configuration preservation tool.
-# Captures to external media only; never changes source configuration or boot state.
+# Captures selected configuration only to OWNER-selected mounted FX11 data volume.
+# No full-system image, no partition operations and no encryption requirements.
 set -Eeuo pipefail
 umask 077
 export LC_ALL=C
@@ -10,14 +11,15 @@ usage() {
 FX Linux pre-KDE preservation
 
 Usage:
-  bash fx-linux-preserve.sh --dry-run /path/to/MOUNTED/external-drive
-  bash fx-linux-preserve.sh --capture /path/to/MOUNTED/external-drive
+  bash fx-linux-preserve.sh --dry-run /path/to/MOUNTED/FX11/FX-Linux-Config
+  bash fx-linux-preserve.sh --capture /path/to/MOUNTED/FX11/FX-Linux-Config
   bash fx-linux-preserve.sh --verify /path/to/FX-LINUX-PRE-KDE-.../SHA256SUMS
 
 The --capture operation writes ONLY to the specified backup destination.
 It does not use sudo or change the source Linux installation.
-NOTE: This is a CONFIGURATION backup, NOT a full home/data/Windows backup.
-Never reinstall until a separate full-data backup and the integrity checks pass.
+NOTE: Selected FX Linux settings only. NOT an image or entire system backup.
+OWNER chose the mounted FX11 partition as destination; no encryption is imposed.
+The FX11 destination partition must NOT be formatted during Fedora KDE installation.
 Do not upload resulting archives or reports to a public GitHub repository.
 EOF
 }
@@ -34,34 +36,33 @@ if [[ "$mode" == --verify ]]; then
 fi
 
 [[ ${EUID} -ne 0 ]] || { echo 'ERROR: run as normal Fedora user, NOT root/sudo' >&2; exit 2; }
-[[ -d "$arg" ]] || { echo 'ERROR: destination directory does not exist; mount external drive first.' >&2; exit 2; }
+[[ -d "$arg" ]] || { echo 'ERROR: destination directory does not exist; first mount FX11 and create the target folder.' >&2; exit 2; }
 command -v findmnt >/dev/null || { echo 'ERROR: findmnt is required' >&2; exit 2; }
 command -v tar >/dev/null || { echo 'ERROR: tar is required' >&2; exit 2; }
 command -v sha256sum >/dev/null || { echo 'ERROR: sha256sum is required' >&2; exit 2; }
 
+# Exact allowlist: Linux appearance, monitor, power, GRUB and FX tools only.
+# Excludes entire HOME, browser profiles, Documents, SSH and generic app caches.
 user_items=(
   .config/conky .conky .conkyrc .config/Conky
   .config/fenix-nightlight .local/share/fenix-nightlight .local/bin/fenix-nightlight
-  .config/cosmic .config/COSMIC .local/state/cosmic-comp
-  .config/systemd/user .config/autostart .local/share/applications
-  .config/gtk-3.0 .config/gtk-4.0 .config/Kvantum .config/qt5ct .config/qt6ct
+  .local/state/cosmic-comp/outputs.ron .local/state/cosmic-comp/outputs.ron.bak
+  .config/cosmic .config/COSMIC
+  .config/systemd/user .config/autostart
+  .config/gtk-3.0/settings.ini .config/gtk-4.0/settings.ini
+  .config/Kvantum .config/qt5ct .config/qt6ct
   .config/kdeglobals .config/kwinrc .config/plasmashellrc
   .config/plasma-org.kde.plasma.desktop-appletsrc .config/kscreen
-  .local/share/plasma .local/share/icons .local/share/themes
-  .local/share/wallpapers .local/share/backgrounds
-  .icons .themes .gtkrc-2.0 .config/dconf/user
-  .local/share/fonts .config/fontconfig
+  .local/share/icons .local/share/themes .local/share/wallpapers
+  .icons .themes .gtkrc-2.0 .config/fontconfig
 )
 system_items=(
   etc/default/grub etc/default/grub.fxos-backup
   etc/systemd/logind.conf etc/systemd/logind.conf.d
-  etc/systemd/sleep.conf.d etc/systemd/system
-  etc/tuned etc/NetworkManager/conf.d
+  etc/systemd/sleep.conf.d etc/tuned
   etc/modprobe.d etc/sysctl.d etc/udev/rules.d
-  etc/dnf etc/yum.repos.d
   etc/fstab etc/kernel/cmdline etc/dracut.conf.d
-  boot/grub2/themes/fxos boot/grub2/themes/breeze
-  boot/loader/entries
+  boot/grub2/themes/fxos boot/loader/entries
 )
 user_found=() system_found=()
 for p in "${user_items[@]}"; do [[ -e "$HOME/$p" || -L "$HOME/$p" ]] && user_found+=("$p"); done
@@ -74,17 +75,18 @@ printf '\nSystem paths to archive (relative to /):\n'
 for p in "${system_found[@]}"; do printf '  %s\n' "$p"; done
 
 if [[ "$mode" == --dry-run ]]; then
-  printf '\nDRY RUN: no files copied. A real run will require a separately mounted backup filesystem.\n'
+  printf '\nDRY RUN: no files copied. For capture choose a mounted, writable FX11 partition folder.\n'
   exit 0
 fi
 
-# Abort if destination is on the same mounted filesystem as /.  This does not
-# prove the destination is on a different physical disk; OWNER must verify lsblk.
+# Require a mounted filesystem separate from Fedora root. It may be a separate
+# partition on the SAME physical disk, as explicitly chosen by OWNER.
+# This alone cannot prove the partition will survive reinstall: verify lsblk.
 root_mount=$(findmnt --noheadings --output TARGET --target / | head -n1)
 dest_mount=$(findmnt --noheadings --output TARGET --target "$arg" | head -n1)
 [[ -n "$dest_mount" && "$dest_mount" != "$root_mount" ]] || {
-  echo 'ERROR: destination is not on a separate mounted filesystem from /.' >&2
-  echo 'Use a mounted external drive; verify its physical disk using lsblk -f.' >&2
+  echo 'ERROR: target must be an already mounted partition separate from the Fedora root filesystem.' >&2
+  echo 'Mount the FX11 Windows volume and verify it using lsblk -f / findmnt.' >&2
   exit 2
 }
 [[ -w "$arg" ]] || { echo 'ERROR: destination is not writable.' >&2; exit 2; }
@@ -94,12 +96,12 @@ out="${arg%/}/FX-LINUX-PRE-KDE-${stamp}-$$"
 mkdir -- "$out"
 mkdir -- "$out/reports"
 printf '%s\n' 'PRIVATE CONFIG ARCHIVE. MAY CONTAIN WIFI, PATHS, DEVICE DATA, LOCATION AND TOKENS.' \
-  'Do not upload these archives or reports to GitHub. Store on a trustworthy/offline encrypted drive.' \
-  'This does NOT include personal documents, browsers, mail, photos or Windows files.' \
+  'Do not upload these archives or reports to GitHub. Keep privately in the selected FX11 folder.' \
+  'This includes only selected FX Linux config and related technical reports, not an OS image or personal data.' \
   'Do not restore COSMIC session configuration into KDE wholesale.' > "$out/PRIVATE-README.txt"
 
-# Tar preserves filenames, ownership metadata, symlinks, modes and timestamps,
-# even on an exFAT backup filesystem. Does not traverse a symlink's target.
+# Tar keeps Linux metadata and symlinks within a portable archive even on NTFS.
+# Do not extract COSMIC configs wholesale into the new KDE session.
 failures=0
 if (( ${#user_found[@]} )); then
   if ! tar -C "$HOME" -czf "$out/user-config.tar.gz" -- "${user_found[@]}" 2>"$out/reports/user-tar-errors.txt"; then
@@ -120,13 +122,12 @@ run_report() {
   { printf '# %s\n' "$title"; "$@"; } > "$out/reports/$title.txt" 2>&1 || printf 'UNAVAILABLE OR ERROR: %s\n' "$title" >> "$out/reports/commands-with-errors.txt"
 }
 run_report os-release cat /etc/os-release
-run_report uname uname -a
+run_report kernel-version uname -r
 run_report rpm-installed rpm -qa --qf '%{NAME}\t%{VERSION}-%{RELEASE}\t%{ARCH}\n'
 run_report flatpak-installed flatpak list --app --columns=application,branch,origin
 run_report dnf-repos dnf repolist --all
 run_report user-enabled-units systemctl --user list-unit-files --state=enabled --no-pager
 run_report system-enabled-units systemctl list-unit-files --state=enabled --no-pager
-run_report user-running-services systemctl --user list-units --type=service --state=running --no-pager
 run_report current-power-profile powerprofilesctl get
 run_report tuned-profile tuned-adm active
 run_report swap swapon --show
@@ -150,7 +151,7 @@ run_report grub-env grub2-editenv list
   printf 'System tar paths: %s\n' "${#system_found[@]}"
   printf 'Tar creation failures: %s\n' "$failures"
   echo 'Checksum list excludes SHA256SUMS itself.'
-  echo 'Physical separation of target drive from source drive MUST be verified manually.'
+  echo 'The selected FX11 partition is allowed on the same physical drive; DO NOT format it.'
 } > "$out/reports/SUMMARY.txt"
 
 ( cd "$out" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 -r sha256sum > SHA256SUMS )
@@ -161,8 +162,8 @@ run_report grub-env grub2-editenv list
 printf '\nBACKUP DIRECTORY: %s\n' "$out"
 printf 'sha256: OK; tar errors: %s\n' "$failures"
 printf 'Inspect reports/possible-extra-files.txt and both *tar-errors.txt files.\n'
-printf 'Before reinstall: confirm external drive, copy personal DATA separately, and check dual-boot partition plan.\n'
+printf 'Before reinstall: verify the FX11 partition will be preserved and identify the Fedora target partition.\n'
 if (( failures > 0 )); then
-  echo 'INCOMPLETE SYSTEM/USER ARCHIVE: read tar errors and capture inaccessible files separately before reinstall.' >&2
+  echo 'INCOMPLETE CONFIG ARCHIVE: review tar errors and recover inaccessible FX settings before reinstall.' >&2
   exit 1
 fi
