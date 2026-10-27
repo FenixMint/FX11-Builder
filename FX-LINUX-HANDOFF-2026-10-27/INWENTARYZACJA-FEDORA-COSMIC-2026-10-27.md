@@ -72,3 +72,7 @@ Katalog `/etc/tuned/`: `active_profile`, `bootcmdline`, `post_loaded_profile`, `
 **Aktualna instrukcja OWNER:** jedno archiwum `.tar.gz` z konkretnych źródeł (Conky, sensory, autostart, GRUB kompletny, tło o potwierdzonym SHA, Fenix Night Light jeśli obecny, konfiguracja monitora/klapy, `/etc/tuned`, `/etc/sysctl.d` z `/etc/sysctl.conf`, `/etc/modprobe.d`), plus plik tekstowy z opisem modyfikacji i wynikami stanu. OWNER sam przeniesie archiwum na FX11, **bez automatycznego montowania/kopiowania, szyfrowania ani backupu systemu**. Nie wrzucać prywatnego archiwum na GitHub.
 
 **Do potwierdzenia po wykonaniu:** rzeczywisty manifest zawartości utworzonego archiwum, rozmiar, brak błędów `tar`, fizyczny transfer na FX11. Tych zdarzeń jeszcze nie stwierdzono.
+
+## Checkpoint archiwum — 2026-10-27
+
+OWNER potwierdzil lokalne utworzenie FX-Linux-Config-20261027-115021.tar.gz w Pobrane. Rozmiar pokazany przez ls -lh: 6,5M. SHA256: bda592a6cc782c72a57282e9c4f81ebe222b613cbb8b9342c5ec8851e41b7e0b. Weryfikacja odczytu tar -tzf przeszla, liczba wpisow archiwum 293. Raport terminala: archiwum utworzono pomyslnie. Nie jest jeszcze potwierdzone reczne skopiowanie pliku na partycje FX11 ani sprawdzenie SHA256 kopii. Nie badano pelnego spisu zawartosci archiwum. Nie wysylamy prywatnego archiwum na GitHub.
