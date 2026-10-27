@@ -184,3 +184,17 @@ OWNER potwierdził na Fedora KDE:
 Dopiero po tej weryfikacji można przygotować wąski, odwracalny plan zmian `/etc/default/grub` oraz skopiowania **wyłącznie** motywu, z kopią konfiguracji i sprawdzeniem wygenerowanego menu przed rebootem. Zmiana bootloadera wymaga osobnej decyzji OWNER, nie została wykonana w tym checkpoincie.
 
 Unikać poleceń `grub2-install` na UEFI i `grub2-mkconfig -o /boot/efi/EFI/fedora/grub.cfg`. Nie naruszać EFI, kolejności startowej, partycji FX11/Windows, BLS, systemowej konfiguracji KDE.
+
+
+## GRUB FX OS — OWNER confirms assets and generated boot configuration preflight
+
+Read-only terminal results from OWNER (2026-10-27):
+
+- Stage `~/FX-Linux-Odzysk/boot/grub2/themes/fxos/icons` contains both `fedora.png` and `windows.png`. Historical theme root also contains `theme.txt`, `background.png`, fonts `fxos-regular-24.pf2` and `fxos-bold-28.pf2`, pixmaps and Unifont.
+- Archived COSMIC `/etc/default/grub` includes `GRUB_TERMINAL_OUTPUT="gfxterm"`, `GRUB_ENABLE_BLSCFG=true`, `GRUB_THEME="/boot/grub2/themes/fxos/theme.txt"`, `GRUB_GFXMODE="1920x1080,1680x1050,auto"`. Current KDE uses `GRUB_TERMINAL_OUTPUT="console"`, `GRUB_ENABLE_BLSCFG=true`, `GRUB_TIMEOUT=5`, no active `GRUB_THEME` or `GRUB_GFXMODE` in checked lines.
+- Current KDE `/boot/grub2/grub.cfg` **exists** and text checks found `blscfg`, Windows Boot Manager/`bootmgfw.efi`, and `fwsetup`. `sudo grub2-script-check /boot/grub2/grub.cfg` returned exit 0 / **PASS**.
+- Existing Fedora UEFI and Windows UEFI entries had previously been found independently with `efibootmgr`; keep both.
+- Therefore the source asset paths and current configuration are plausible for an **isolated restore of graphics**, but **no boot change has been applied**, and the current working Windows/Fedora boot paths have NOT yet been tested from a new generated theme menu. A simple `grep` hit indicates strings are present in `grub.cfg`, not a full behavioral boot test.
+- Historical SHA-256 checksums in `prototypes/fx-linux-grub/ASSETS.md`: wallpaper `cd06a7f64c654ca47e2a5c7879418d0e881ef50b9b221215b9803bc4f39ecc95`, `icons/fedora.png` `b07395a0c6990252fe4b45e82b43589d5043231ea97ac52bb6978991acc8a14d`, `icons/windows.png` `9011edce08035aed6e8e57d419706309100815051b6cb9a66347aeace4fb40ea`. Next optional **read-only** step: compare the staged files against those expected SHA before any use.
+- Any actual deployment should be limited to a separately reviewed theme directory and narrow edits in `/etc/default/grub`, with preserved copies, idempotent checks and rollback, preserving BLS, existing Windows entry, and 5-second timeout; the current `grub.cfg` must be backed up and regenerated in the Fedora-authorized place only after explicit OWNER approval. Avoid all changes in ESP/UEFI NVRAM, `grub2-install`, manual `grub.cfg` edits or changes to `/boot/loader/entries`. Check generated `grub.cfg` with `grub2-script-check` again before reboot.
+- Decision gate remains **OWNER approval** for bootloader changes, not implied merely by having passed read-only audit.
