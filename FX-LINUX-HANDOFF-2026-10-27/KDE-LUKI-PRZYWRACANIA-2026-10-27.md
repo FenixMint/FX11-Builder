@@ -148,3 +148,18 @@ OWNER uruchomił porównanie plików `~/FX-Linux-Odzysk/etc/modprobe.d` (archiwu
 **Wniosek:** `modprobe.d` nie przywracać hurtowo. Obejrzeć tylko tekst trzech brakujących plików, a zwłaszcza sprawdzić sens i ewentualne źródło pakietowe wpisów `kvm.conf`, `vhost.conf`. Przed jakimikolwiek zapisami do `/etc/modprobe.d` wymagana świadoma decyzja OWNER. Ocena ograniczona do porównanych ścieżek, nie do wszystkich możliwych parametrów sterowników.
 
 **Następny krok read-only:** `for n in disable-webcam.conf kvm.conf vhost.conf; do echo "$n"; sed -n '1,120p' "$HOME/FX-Linux-Odzysk/etc/modprobe.d/$n"; done` z kontrolą istnienia pliku; ewentualnie `lsmod` / `modinfo` dla zrozumienia bieżącej obsługi sprzętu, bez zmian stanu. Następny niezależny, potencjalnie bardziej ryzykowny etap: rozpoznanie aktualnego GRUB/BLS/Windows Boot Manager przed przywracaniem wyglądu FX OS.
+
+
+## OWNER verified content of three missing modprobe files
+
+OWNER odczytał trzy brakujące względem COSMIC konfiguracje:
+
+- `disable-webcam.conf`: dokładnie `blacklist uvcvideo` (własna decyzja o blokowaniu automatycznego ładowania UVC; stan blokady w KDE nie został włączony).
+- `kvm.conf`: tylko komentarze z przykładami `#options kvm_intel nested=1` i `#options kvm_amd nested=1`. **Brak aktywnych dyrektyw**. Nie odtwarzać, nie jest wykazaną utraconą optymalizacją. Tekst odpowiada przykładom w historycznych pakietach qemu-kvm Red Hat: https://bugzilla.redhat.com/show_bug.cgi?id=1290150 .
+- `vhost.conf`: dwa komentarze i **aktywne** `options vhost max_mem_regions=509`. Dotyczy maksymalnej liczby regionów pamięci dla sterownika vhost, szczególnie przy wirtualizacji QEMU/KVM; *nie* jest ogólną optymalizacją wydajności. Tekst dokładnie zgadza się z przykładowym plikiem `SOURCES/vhost.conf` w pakietach QEMU z rodziny RPM: https://git.almalinux.org/rpms/qemu/commit/001015e8674e667ac6983bb71c16e9df5d99fe06?show-outdated=&style=unified&whitespace=ignore-all . Autor dokumentacji virtio-mem mówi, że taki `max_mem_regions=509` bywa ustawiany standardowo na Fedorze przez `/etc/modprobe.d/vhost.conf`: https://virtio-mem.gitlab.io/user-guide/user-guide-qemu.html . **Nie ma dowodu**, że historyczny plik w komputerze OWNER został stworzony własnoręcznie; nie przywracać na ślepo, tylko gdy realna konfiguracja wirtualizacji tego potrzebuje.
+
+**Ocena w tej fazie:** 10 z 13 zachowanych plików modprobe było identycznych na KDE; brakujące `kvm.conf` jest komentarzowym przykładem; `vhost.conf` jest czynną opcją specyficzną dla VM, najpewniej po pakiecie QEMU, lecz nie stwierdzono jeszcze pochodzenia RPM na starej instalacji. `disable-webcam.conf` to opcja funkcjonalna i świadoma decyzja OWNER (nie zakładać jej przywrócenia bez zgody).
+
+**Ewentualna diagnostyka tylko do odczytu**, jeśli temat vhost będzie ważny: `modprobe -c | grep -E '^options vhost '`, `cat /sys/module/vhost/parameters/max_mem_regions` o ile ten plik istnieje, `rpm -q qemu-kvm` i lista zainstalowanych pakietów QEMU. To nic nie uruchamia ani nie ładuje modułu. W obecnym etapie nie ma uzasadnienia do zmiany `/etc/modprobe.d`.
+
+**Następny etap migracji:** GRUB FX OS — najpierw inwentaryzacja BLS/UEFI i Windows Boot Manager oraz bezpieczna weryfikacja motywu w archiwum. Unikać zmian w bootloaderze przed audytem. 
