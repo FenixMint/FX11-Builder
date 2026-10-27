@@ -1,6 +1,6 @@
 # FenixSystem — profil testowy Fedora 44 KDE Plasma Wayland
 
-**Status: projekt wersji KDE, NIE uruchomiony jeszcze na komputerze OWNER.** Oryginalne pliki COSMIC pozostają w archiwum i `~/FX-Linux-Odzysk`.
+**Status: podstawowe czujniki, sieć i widoczność Conky na KDE Wayland POTWIERDZONE przez OWNER; poprawiony dwukolumnowy układ CPU wymaga jeszcze testu.** Oryginalne pliki COSMIC pozostają w archiwum i `~/FX-Linux-Odzysk`.
 
 ## Zmiany względem odzyskanych plików
 
@@ -8,8 +8,8 @@ Wersja zachowuje ten sam układ z prawym górnym rogiem i dwunastoma polami obci
 
 - `fenix-sensors-kde.sh`: czyta `k10temp`, `amdgpu`, `nvme`, `thinkpad` tylko gdy odpowiednie pliki istnieją i są czytelne; w pozostałych przypadkach pokazuje `--`.
 - `fenix-network-kde.sh`: wykrywa interfejs domyślnej trasy IPv4/IPv6; nie zakłada starego `wlp6s0`.
-- `fenixsystem-kde.conf`: zachowuje Conky Wayland i pierwotny rozkład, ale wykorzystuje nowe helpery, `nproc` w nagłówku i `battery_percent all`. Wykresy logicznych CPU 1–12 nadal bazują na historycznym układzie — sprawdzić `nproc`.
-- Okno pozostaje na początek `own_window_type = 'normal'` i `below`; wygląd na KWin Wayland należy przetestować na żywo. Na Fedora 44 Conky 1.22.2 `out_to_wayland` jest poprawną opcją. Nie używamy opcji z Conky nowszych niż wersja repo Fedora 44.
+- `fenixsystem-kde.conf`: zachowuje Conky Wayland i pierwotny rozkład, ale wykorzystuje nowe helpery, `nproc` w nagłówku i **`battery_percent BAT0`** (potwierdzono obecność BAT0). Wątki CPU 1–12 przedstawiono w dwóch kolumnach; `nproc` wynosi **12**.
+- Na KWin Wayland `own_window_type = 'normal'` jest zachowany, ale usunięto `own_window_hints` zawierające `below`: OWNER potwierdził, że dopiero usunięcie wskazówek pozwoliło zobaczyć widżet na pulpicie. Na Fedora 44 Conky 1.22.2 `out_to_wayland` jest poprawną opcją. Nie używamy opcji z Conky nowszych niż wersja repo Fedora 44.
 
 ## Odczyt i test bez autostartu
 
@@ -35,7 +35,7 @@ OWNER ustawił natywny Night Color KDE na **5000 K**, TuneD na `balanced`, zram 
 
 Źródła potwierdzające wsparcie Conky Wayland w Fedora 44: https://packages.fedoraproject.org/pkgs/conky/conky/fedora-44.html ; opcje Conky: https://conky.cc/config_settings .
 
-Nie wykonano testu w sesji użytkownika ani instalacji pakietów.
+OWNER zainstalował oficjalny `conky-1.22.2-3.fc44`, uruchomił FenixSystem na KDE Wayland i pokazał zrzut ekranu po usunięciu `own_window_hints`. W zrzucie działały CPU, RAM, dysk, czujniki, bateria i sieć, ale etykiety CPU w **pierwotnym układzie trzykolumnowym nachodziły na siebie**. Dwukolumnowa poprawka z GitHuba jest nadal kandydatem do testów.
 
 ## Automatyczne pobranie trzech plików (OWNER request)
 
@@ -67,3 +67,18 @@ BASH
 ```
 
 To tylko **pobiera pliki do staging**, nie wykonuje żadnego skryptu, nie instaluje Conky, nie aktywuje autostartu i nie zmienia konfiguracji. Istniejących plików nie nadpisuje. `bash -n` to wyłącznie sprawdzanie składni skryptów; nie testuje ich działania na czujnikach.
+
+## Drugi etap: test widocznej wersji z poprawionymi kolumnami CPU
+
+Pobierz **tylko nową konfigurację**, przypiętą do commitu `08ef36d5316f9367a8900ab61a4c0918d97f0ad9`. Użyj osobnej nazwy, **nie nadpisuj** `~/.config/conky/fenixsystem-kde.conf` ani poprzednich wersji w staging.
+
+```bash
+DIR="$HOME/FX-Linux-Odzysk/kde-fenixsystem"
+mkdir -p "$DIR"
+TARGET="$DIR/fenixsystem-kde-v2.conf"
+URL="https://raw.githubusercontent.com/FenixMint/FX11-Builder/08ef36d5316f9367a8900ab61a4c0918d97f0ad9/FX-LINUX-HANDOFF-2026-10-27/kde-adaptation/fenixsystem/fenixsystem-kde.conf"
+curl -fLsS --proto '=https' "$URL" -o "$TARGET" &&
+  conky -c "$TARGET"
+```
+
+Jeśli w tym katalogu plik `fenixsystem-kde-v2.conf` już istnieje, zastosuj inną nazwę lub najpierw sprawdź zawartość, żeby nie utracić ręcznych zmian. Poprawka nie zakłada aktywacji autostartu.
