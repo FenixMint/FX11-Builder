@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=FenixSystem KDE
+Comment=FenixSystem hardware monitor on Fedora KDE Wayland
+Exec=/usr/bin/bash -lc "sleep 8; exec /usr/bin/conky -c ~/.config/conky/fenixsystem-kde.conf"
+TryExec=/usr/bin/conky
+Terminal=false
+StartupNotify=false
+OnlyShowIn=KDE;
