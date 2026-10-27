@@ -85,3 +85,20 @@ Implementation update in temporary branch `work/fx-linux-pre-kde-preservation-20
 Source: [skrypt](https://github.com/FenixMint/FX11-Builder/blob/work/fx-linux-pre-kde-preservation-2026-10-27/tools/fx-linux-preserve/fx-linux-preserve.sh) and [current instructions](https://github.com/FenixMint/FX11-Builder/blob/work/fx-linux-pre-kde-preservation-2026-10-27/tools/fx-linux-preserve/README.md).
 
 **Test**: source file Git blob SHA `f076672f538d9c97dc4745503c5f2bdaa0b26794` verified against local copy; `bash -n`, synthetic `--dry-run`, synthetic `--capture` to separately mounted Linux tmpfs, and `--verify` SHA-256 passed as non-root user. NOT tested on actual FX11 NTFS, NOT run on ThinkPad, and no real settings capture yet verified.
+
+## OWNER FINAL CLARIFICATION — 2026-10-27: manual preservation package, not backup automation
+
+OWNER: "nic nie ustalamy. ja manualnie skopiojue dane. pakujemy skrypty, ustawienia itd, informacje o modyfikacjach". **BINDING:** Previous proposals to run an automated capture script, ask for disk mount locations, make an image, collect all user data or require encryption are **SUPERSEDED for this migration**.
+
+Prepared a **source + documentation handoff package** in isolated branch `handoff/fx-linux-manual-package-2026-10-27`, folder `FX-LINUX-HANDOFF-2026-10-27/`:
+- actual pinned Fenix Night Light 0.1 alpha source, installers, docs, test source and license;
+- genuine GRUB `theme.txt` and editable FX icon SVGs, each from its own original prototype ref;
+- dated historical `logind` lid policy reference;
+- record of historical tested changes, source versions and still missing assets;
+- explicit **manual** local file checklist (Conky/FenixSystem, GRUB PNG/PF2, Night Light user config, power/monitor files and design assets).
+
+Git-tree verification after package creation: **32 package files**, including **27 copied source files**; all 27 copied Git blobs match their source repository/revision blobs. Package branch HEAD at verification: `e27c30964439aba58f3d8aa4c814a957cf1bf416`.
+
+[Package starting point](https://github.com/FenixMint/FX11-Builder/blob/handoff/fx-linux-manual-package-2026-10-27/FX-LINUX-HANDOFF-2026-10-27/START-TUTAJ.md).
+
+This is **not evidence of local Fedora data copied to FX11**: OWNER is doing that manually. The earlier `fx-linux-preserve.sh` remains historical source in a different work branch but is **not required or recommended** for the current manual process. No changes to running systems or boot configuration were performed here. Private runtime files stay off GitHub.
