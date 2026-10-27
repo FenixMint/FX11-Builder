@@ -59,3 +59,12 @@ Motyw GRUB jest rozdzielony na **dwie odrębne gałęzie prototypowe**, z plikam
 **Częściowo zabezpieczone**: istnieją źródła/ustalenia GRUB, działający kod Fenix Night Light, szczegółowy checkpoint konfiguracji ekranu/klapy i architektura FX Linux. **Niepotwierdzone na GitHubie**: kompletne optymalizacje Linuksa, gotowy Conky/FenixSystem Linux, odtwarzalna konfiguracja KDE i finalne graficzne binaria GRUB.
 
 Ten dokument utrwala **ustalenia audytu**, bez modyfikowania istniejących modułów. Poza utworzeniem samego checkpointu na GitHubie żadnych zmian kodu ani działań na systemach nie wykonywano.
+
+## Update 2026-10-27 — przygotowano narzędzie backupu przed Fedora KDE
+
+**SOURCE TOOL PREPARED / LOCAL BACKUP NOT EXECUTED.** OWNER zdecydował o zabezpieczeniu konfiguracji przed reinstalacją środowiska z COSMIC na KDE. Powstała odrębna gałąź robocza `work/fx-linux-pre-kde-preservation-2026-10-27` z nieinwazyjnym skryptem do wykonania prywatnej kopii na zewnętrznym nośniku:
+
+- [fx-linux-preserve.sh](https://github.com/FenixMint/FX11-Builder/blob/work/fx-linux-pre-kde-preservation-2026-10-27/tools/fx-linux-preserve/fx-linux-preserve.sh)
+- [Instrukcja i bramki bezpieczeństwa](https://github.com/FenixMint/FX11-Builder/blob/work/fx-linux-pre-kde-preservation-2026-10-27/tools/fx-linux-preserve/README.md)
+
+Skrypt przechodzi `bash -n`, syntetyczny dry-run, lokalny test archiwizacji i kontrolę `sha256sum --check` w oddzielonym środowisku Linux, **ale nie był uruchomiony na ThinkPadzie OWNER**. Nie mamy jeszcze rzeczywistych archiwów ani potwierdzonego wyniku odczytu `/boot/grub2/themes/fxos`, lokalnego Conky czy plików graficznych. Fizycznie oddzielny nośnik oraz osobna pełna kopia danych osobistych pozostają warunkami przed reinstalacją. Prywatnych dumpów nie wysyłać do publicznego GitHub. Dokumentacja tego procesu nie stanowi zgody na formatowanie partycji Windows/ESP lub innych dysków.
