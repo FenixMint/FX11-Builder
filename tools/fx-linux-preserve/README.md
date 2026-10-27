@@ -1,75 +1,59 @@
-# FX Linux — zabezpieczenie konfiguracji przed reinstalacją Fedora KDE
+# FX Linux — zachowanie ustawień przed przejściem z COSMIC na Fedora KDE
 
-**Status: SOURCE TOOL / TESTED IN ISOLATED LINUX ENVIRONMENT / NOT EXECUTED ON OWNER'S THINKPAD**
+**OWNER CORRECTION — 2026-10-27.** Wcześniejszy pomysł kopii na zewnętrzny, szyfrowany nośnik i szerokich archiwów był zbyt rozbudowany. Priorytetem jest zachowanie **konkretnych konfiguracji FX Linux**, nie obrazu systemu ani całego katalogu domowego.
 
-Projekt FX Linux jest priorytetem P1. Ta gałąź zachowuje narzędzie przed migracją z Fedory COSMIC na Fedorę KDE Plasma. Nie jest przeznaczona do automatycznego scalenia z FX11 Builder `main`.
+**Miejsce docelowe: wskazany folder na zamontowanej partycji FX11 (Windows).** Partycja FX11 może być na tym samym dysku fizycznym co Fedora. Nie wymagamy dodatkowego szyfrowania, osobnego urządzenia ani dużego archiwum systemowego.
 
-## Co robi skrypt
+## Co obejmujemy
 
-`fx-linux-preserve.sh` kopiuje **wyłącznie wskazane konfiguracje**, m.in.:
-- Conky / ewentualny FenixSystem Linux i uruchamianie użytkownika;
-- konfiguracje COSMIC i stan monitorów;
-- Fenix Night Light;
-- wybrane katalogi ikon, motywów, KDE/GTK i czcionek;
-- dostępne do odczytu ustawienia `systemd`, `logind`, GRUB FX OS, BLS, `dnf`, `modprobe`, `sysctl`, `udev`, `fstab`;
-- raporty pakietów `rpm`, Flatpak, usług, zram, swap, profili zasilania, montowania dysków.
+- **Conky / FenixSystem Linux:** wykryte pliki konfiguracji i autostartu.
+- **FX OS GRUB:** motyw `/boot/grub2/themes/fxos`, jeśli czytelny, oraz pliki `/etc/default/grub`, ustawienia BLS i opis potencjalnych źródeł lokalnych.
+- **Monitory i klapa:** `~/.local/state/cosmic-comp/outputs.ron`, `/etc/systemd/logind.conf[.d]`.
+- **Fenix Night Light:** ustawienia i lokalne pliki programu.
+- **Wygląd:** wybrane motywy, ikony, tapety, pliki KDE/GTK i ustawienia COSMIC będące punktem odniesienia dla KDE.
+- **Optymalizacje:** jawne pliki `tuned`, `sysctl.d`, `modprobe.d`, `udev/rules.d`, `dracut.conf.d`, informacyjne listy pakietów RPM/Flatpak, włączonych usług, zram/swap i aktywnego profilu zasilania.
 
-Ponadto wypisuje możliwe pliki Conky/FX/Fenix poza typowymi lokalizacjami. **Lista nie jest gwarancją kompletności — trzeba ją obejrzeć ręcznie.**
+Skrypt świadomie **nie obejmuje** Windowsa, całego Linuksa, `/home`, `/etc`, prywatnych dokumentów, poczty, profili przeglądarek, kluczy SSH ani danych użytkownika.
 
-**Nie wykonuje żadnych zmian w konfiguracji źródłowej, pakietach, GRUB, partycjach ani usługach. Nie używa `sudo`.**
+### Sposób pracy
 
-## Krok 0 — wymagane warunki bezpieczeństwa
-
-1. Podłączyć **fizycznie osobny, zaufany i najlepiej zaszyfrowany dysk**. Sprawdzić `lsblk -f` i rozpoznać dysk/partycję. Skrypt odrzuci zapis na tym samym *systemie plików*, ale nie potrafi dowieść, że to inny *dysk fizyczny*. Osobna partycja tego samego SSD nie wystarczy.
-2. Wykonać **osobną pełną kopię danych osobistych** (dokumenty, przeglądarki, hasła/profil, poczta, projekty, SSH, zdjęcia, dyski VM itp.). Ten skrypt nie kopiuje całego `$HOME`.
-3. Zidentyfikować obecny schemat partycji, ESP/UEFI oraz partycje Windows/FX11. **Nie formatować Windows/ESP bez osobnego, zweryfikowanego planu instalatora.**
-4. Kopie zawierają potencjalnie prywatne adresy/identyfikatory, lokalizację i klucze w plikach konfiguracyjnych. **Nigdy nie publikować tar.gz, raportów lub dumpów w GitHubie.** W repozytorium publikujemy wyłącznie przejrzany skrypt i dokumentację.
-
-## Użycie na Fedorze COSMIC
-
-Uruchomić jako zwykły użytkownik (bez sudo). Przykładowa ścieżka `/run/media/$USER/MOJ_DYSK` jest **przykładem**, nie ustaloną lokalizacją.
+1. Pod Fedorą zamontować istniejącą **partycję FX11 w trybie odczytu/zapisu**. Sprawdzić `lsblk -f` oraz `findmnt`; nie mylić Windows NTFS z partycją Linuksa czy EFI. Jeżeli Windows jest zahibernowany albo system plików NTFS jest tylko do odczytu, **nie wymuszać montowania RW** — najpierw rozwiązać przyczynę normalnymi metodami.
+2. Utworzyć **jednorazowo osobny folder**, np. `/run/media/$USER/FX11/FX-Linux-Config` (ścieżka orientacyjna: użyć rzeczywistego punktu montowania).
+3. Z katalogu zawierającego pobrany skrypt uruchomić jako zwykły użytkownik, bez `sudo`:
 
 ```bash
 lsblk -f
-bash fx-linux-preserve.sh --dry-run "/run/media/$USER/MOJ_DYSK"
-bash fx-linux-preserve.sh --capture "/run/media/$USER/MOJ_DYSK"
+findmnt
+bash fx-linux-preserve.sh --dry-run "/run/media/$USER/FX11/FX-Linux-Config"
+bash fx-linux-preserve.sh --capture "/run/media/$USER/FX11/FX-Linux-Config"
 ```
 
-Skrypt tworzy nowy katalog `FX-LINUX-PRE-KDE-YYYYMMDDThhmmssZ-PID` z:
-- `user-config.tar.gz` (gdy wykryto pasujące pliki użytkownika),
-- `system-config-readable.tar.gz` (gdy wykryto czytelne pliki systemowe),
-- `reports/`, w tym podsumowanie, błędy tar i nazwy możliwych dodatkowych plików,
-- `SHA256SUMS` i `verification-result.txt`.
-
-Z zewnętrznego dysku sprawdzić integralność:
+4. Skrypt tworzy niewielki folder `FX-LINUX-PRE-KDE-<data>-<pid>`, do którego trafiają **wyłącznie wybrane pliki konfiguracyjne** `user-config.tar.gz` i `system-config-readable.tar.gz`, proste raporty `reports/` oraz `SHA256SUMS`.
+5. Sprawdzić integralność na tej samej partycji (najlepiej po ponownym zamontowaniu):
 
 ```bash
-bash fx-linux-preserve.sh --verify "/run/media/$USER/MOJ_DYSK/FX-LINUX-PRE-KDE-.../SHA256SUMS"
+bash fx-linux-preserve.sh --verify "/run/media/$USER/FX11/FX-Linux-Config/FX-LINUX-PRE-KDE-.../SHA256SUMS"
 ```
 
-Jeżeli brak uprawnień do części `/boot` albo `/etc`, archiwum systemowe może być niekompletne. Skrypt zwróci błąd i zapisze szczegóły. **Nie ignorować `tar errors` i nie reinstalować systemu przed uzupełnieniem braków.** Ewentualne pliki wymagające uprawnień administratora należy zabezpieczyć osobną, świadomą operacją tylko do odczytu; nie uruchamiać całego skryptu jako root.
+### Granice bezpieczeństwa
 
-## Po zrobieniu kopii
+- **Partycja FX11 musi pozostać nienaruszona podczas instalacji Fedory KDE.** Nie wybierać jej do formatowania ani instalacji. Zachowujemy Windows Boot Manager i istniejący rozruch.
+- Sam fakt zapisania konfiguracji na FX11 **nie zabezpieczy ich przed błędnym skasowaniem tego samego dysku**; weryfikacja partycji przy instalacji pozostaje wymagana.
+- Skrypt nie modyfikuje systemu, `grub.cfg`, pakietów, usług, ESP ani dysków. Nie instaluje szyfrowania.
+- W archiwach mogą występować dane lokalne lub ustawienia, których nie należy publikować; **nie wysyłać ich na GitHub**. W repozytorium zachowujemy wyłącznie skrypt i ogólne wnioski.
+- Archiwizacja plików wymagających roota może się nie udać; skrypt zapisze błędy. Nie uruchamiać całego skryptu jako root. Braki sprawdzić ręcznie przed reinstalacją.
+- Konfiguracji COSMIC nie odtwarzać na KDE automatycznie. To materiał do adaptacji i dokumentacja wcześniejszych testów.
 
-- Odczytać `reports/SUMMARY.txt`, `reports/possible-extra-files.txt`, błędy i listę plików wewnątrz tar (`tar -tzf`).
-- Zweryfikować SHA256 z backupu, najlepiej po ponownym podłączeniu nośnika.
-- Sprawdzić, czy archiwum zawiera prawdziwe pliki GRUB FX OS, Konfigurację Conky i `logind`, a nie wyłącznie raporty. Jeśli czegoś brakuje, znaleźć źródło i dołożyć do odrębnego prywatnego backupu.
-- Zabezpieczyć także **nieopublikowane grafiki GRUB PNG/PF2** — porównać z hashami w `prototypes/fx-linux-grub/ASSETS.md` na gałęzi `prototype/fx-linux-grub-theme`.
-- Nie przenosić plików COSMIC wprost do KDE: traktować je jako dokumentację i źródło do adaptacji.
-- Zachować możliwość powrotu do działającego GRUB/BLS/Windows i nie usuwać ręcznie wpisów EFI.
+## Kontrola zakresu
 
-## Testy / status
+To backup **wybranych ustawień FX**, a nie gwarancja zachowania danych osobistych. Jeżeli jakieś konkretne źródła Conky, skrypty lub grafiki leżą poza listą, wynik `reports/possible-extra-files.txt` służy do ich odnalezienia. Trzeba je skopiować osobno świadomie (bez plików prywatnych przypadkowo zawartych w katalogach).
 
-Autor narzędzia zweryfikował lokalnie w izolowanym linuksowym środowisku:
-- `bash -n`: OK;
-- `--dry-run` jako użytkownik bez uprawnień administratora: OK;
-- `--capture` na oddzielnym zamontowanym filesystemie testowym: OK;
-- `--verify` dla wygenerowanych sum kontrolnych: OK.
+W szczególności grafiki GRUB, czcionki PF2 i źródła Conky trzeba potwierdzić w archiwum. Ich historyczne SHA-256 są opisane w `prototypes/fx-linux-grub/ASSETS.md` na gałęzi `prototype/fx-linux-grub-theme`.
 
-**To nie jest test na ThinkPadzie OWNER**. Nie mamy dostępu do jego dysku i nie potwierdzamy wykonania kopii, dopóki właściciel nie uruchomi narzędzia i nie sprawdzi wyników.
+## Status wykonania
 
-## Miejsce w architekturze
+**SOURCE PREPARED / NOT RUN ON THINKPAD / NO CAPTURE VERIFIED.** Zmodyfikowano skrypt i dokumentację według aktualnego OWNER. Nie ma jeszcze potwierdzenia, że konfiguracje zostały skopiowane na FX11. Każda kontrola (np. wykonanie skryptu, test kontrolny) powinna być raportowana wyłącznie jeśli faktycznie nastąpiła.
 
-Tymczasowa gałąź robocza `work/fx-linux-pre-kde-preservation-2026-10-27` w `FenixMint/FX11-Builder`. Po uzgodnieniu docelowej struktury repozytoriów narzędzie należy przenieść do FX Linux, ale **bez usuwania historycznych checkpointów**.
+To narzędzie znajduje się tymczasowo na gałęzi `work/fx-linux-pre-kde-preservation-2026-10-27` w repozytorium FX11 Builder i nie oznacza automatycznej integracji FX Linux z FX11.
 
-Zobacz [audyt zachowania na GitHub 2026-10-27](https://github.com/FenixMint/FX11-Builder/blob/main/docs/checkpoints/2026-10-27-fx-linux-github-preservation-audit.md) oraz [aktywny priorytet FX Linux](https://github.com/FenixMint/FX11-Builder/blob/main/docs/decisions/2026-10-21-FX-LINUX-FIRST-PORTFOLIO-PRIORITY.md).
+Powiązane: [audyt zachowania FX Linux](https://github.com/FenixMint/FX11-Builder/blob/main/docs/checkpoints/2026-10-27-fx-linux-github-preservation-audit.md).
