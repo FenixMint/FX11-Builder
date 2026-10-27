@@ -93,3 +93,13 @@ OWNER wykonał `bash -n` obu pobranych skryptów, wynik: **Składnia OK**. Nast�
 - `nproc`: **12**; układ historycznych 12 wątków nie wymaga na tym sprzęcie zmiany.
 
 **Ocena**: oba skrypty działają na aktualnym KDE bez błędów odczytu. Nie potwierdzono jeszcze działania renderowania Conky, zachowania okna pod KWin Wayland, autostartu ani zainstalowania pakietu `conky`. Następny etap: zainstalować Conky z Fedory (za decyzją OWNER), ręcznie wdrożyć profil o odrębnej nazwie `fenixsystem-kde.conf`, sprawdzić rendering bez autostartu, dopiero potem ewentualnie aktywować autostart. Nie modyfikować Night Color **5000 K**, TuneD `balanced`, ZRAM, GRUB ani rozruchu.
+
+## Conky first live KDE Wayland test — warning BAT1/BAT2/BAT3 (OWNER terminal)
+
+On Fedora 44 KDE Wayland, OWNER installed `imlib2-1.12.5-2.fc44` and `conky-1.22.2-3.fc44` successfully via DNF, then ran `conky -c ~/.config/conky/fenixsystem-kde.conf`.
+
+Terminal confirmed: `FOUND: wayland`, `'KDE' wayland session running`. Conky continued running and was terminated by manual `Ctrl+C`, reporting normal signal cleanup. **Visual placement of window was NOT yet explicitly confirmed.**
+
+Repeated warnings tried missing BAT1, BAT2, BAT3 (`/sys/class/power_supply/BAT1/uevent` and ACPI battery paths). Cause in candidate config: `${battery_percent all}` enumerates all batteries; original COSMIC configuration used `${battery_percent BAT0}`. Corrected source candidate on GitHub to target BAT0 alone. Battery name on current machine **still needs read-only verification**; original profile BAT0 was historically used on the same ThinkPad. Conky documentation: https://conky.cc/variables.
+
+GitHub profile corrected in commit `9157ba294d3ac78a884526d12a95fd0f33bf9e5a` at `kde-adaptation/fenixsystem/fenixsystem-kde.conf`. **Source update does NOT silently change the already downloaded or installed copy on OWNER's KDE.** Minimal local action: check `/sys/class/power_supply/BAT0`, replace only `battery_percent all` with `battery_percent BAT0` in `~/.config/conky/fenixsystem-kde.conf` after creating a local single-file backup, and rerun foreground Conky. If BAT0 does not exist, identify actual battery name and adapt accordingly. No autostart changes, no TuneD or Night Color changes.
