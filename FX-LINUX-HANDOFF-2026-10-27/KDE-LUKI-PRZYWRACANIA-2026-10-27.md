@@ -163,3 +163,24 @@ OWNER odczytał trzy brakujące względem COSMIC konfiguracje:
 **Ewentualna diagnostyka tylko do odczytu**, jeśli temat vhost będzie ważny: `modprobe -c | grep -E '^options vhost '`, `cat /sys/module/vhost/parameters/max_mem_regions` o ile ten plik istnieje, `rpm -q qemu-kvm` i lista zainstalowanych pakietów QEMU. To nic nie uruchamia ani nie ładuje modułu. W obecnym etapie nie ma uzasadnienia do zmiany `/etc/modprobe.d`.
 
 **Następny etap migracji:** GRUB FX OS — najpierw inwentaryzacja BLS/UEFI i Windows Boot Manager oraz bezpieczna weryfikacja motywu w archiwum. Unikać zmian w bootloaderze przed audytem. 
+
+
+## GRUB FX OS — baseline KDE UEFI/BLS verified from OWNER terminal
+
+Data: 2026-10-27, **OWNER-reported / read-only inspection**. Nie przeprowadzono jeszcze żadnej instalacji ani modyfikacji rozruchu.
+
+OWNER potwierdził na Fedora KDE:
+
+- W staging `~/FX-Linux-Odzysk/boot/grub2/themes/fxos` istnieje `theme.txt`, `background.png`, `fxos-bold-28.pf2`, `fxos-regular-24.pf2`, `unifont-*.pf2`, zasoby `roundedsquare_*.png` i `progress_bar*.png`. Wyświetlono tylko pliki **na poziomie głównym**, więc **nie zweryfikowano jeszcze podkatalogu `icons/` i zawartości szczegółowej** w nowej instalacji. Historyczne source theme w GitHub: `zrodla/grub/theme.txt`.
+- Obecny `/boot/loader/entries/` zawiera wpis rescue i dwa wpisy Fedory z jądrem (6.19.10-300.fc44.x86_64 i 7.2.12-200.fc44.x86_64). Lista nazw została odczytana, start obu jąder nie był testowany w tym kroku.
+- `efibootmgr` potwierdza **Fedora UEFI Boot0000 (obecny/first in BootOrder)** i oddzielny **Windows Boot Manager Boot0001 (second)**. **Nie wnioskować z samego UEFI, że Windows ma pozycję w generowanym menu GRUB ani że go przetestowano po reinstalacji.** Nie zapisywać do repo partycyjnych GUID/NVRAM path.
+- Aktywne pola `/etc/default/grub`: `GRUB_TIMEOUT=5`, `GRUB_TERMINAL_OUTPUT="console"`, `GRUB_ENABLE_BLSCFG=true`. Brak aktywnych `GRUB_THEME=` i `GRUB_GFXMODE=` w wynikach `grep`.
+- Na obecnym KDE katalog `/boot/grub2/themes/fxos/` był wcześniej sprawdzony: brak `theme.txt`. Zatem motyw zachowany w staging, **niezainstalowany** w bieżącym rozruchu.
+- Historycznie działający COSMIC: `GRUB_THEME="/boot/grub2/themes/fxos/theme.txt"`, `GRUB_GFXMODE="1920x1080,1680x1050,auto"` i działające wpisy BLS/Windows/Firmware; stan starego rozruchu nie jest automatycznie aktualnym KDE.
+
+**Konkluzja:** konfiguracja tekstowa `GRUB_TERMINAL_OUTPUT=console` stoi na przeszkodzie zastosowaniu graficznego motywu; GRUB `GRUB_THEME` wymaga `gfxterm` (GNU GRUB manual, https://www.gnu.org/software/grub/manual/grub/html_node/Simple-configuration.html). Fedora UEFI od Fedora 34 używa **`/boot/grub2/grub.cfg`** z małym ESP stub `/boot/efi/EFI/fedora/grub.cfg`; **NIGDY** nie generować do ESP stub ani bezpośrednio edytować `grub.cfg` (Fedora wiki https://fedoraproject.org/wiki/GRUB_2).
+
+**Następny krok wyłącznie odczytowy:** weryfikacja ikon motywu w staging, historycznych wpisów GRUB z odzyskanego `etc/default/grub`, składni i fragmentów bieżącego `/boot/grub2/grub.cfg` (BLS, `fwsetup`, wskaźnik Windows Boot Manager i `grub2-script-check`). Jeśli Windows nie ma w GRUB, wymaga osobnej analizy `os-prober`/wpisów niestandardowych z zachowaniem uruchamialnego UEFI Windows; nie traktować samej obecności UEFI za rozwiązanie GRUB.
+Dopiero po tej weryfikacji można przygotować wąski, odwracalny plan zmian `/etc/default/grub` oraz skopiowania **wyłącznie** motywu, z kopią konfiguracji i sprawdzeniem wygenerowanego menu przed rebootem. Zmiana bootloadera wymaga osobnej decyzji OWNER, nie została wykonana w tym checkpoincie.
+
+Unikać poleceń `grub2-install` na UEFI i `grub2-mkconfig -o /boot/efi/EFI/fedora/grub.cfg`. Nie naruszać EFI, kolejności startowej, partycji FX11/Windows, BLS, systemowej konfiguracji KDE.
