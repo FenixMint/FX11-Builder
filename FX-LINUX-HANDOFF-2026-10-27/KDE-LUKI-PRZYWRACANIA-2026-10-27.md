@@ -56,3 +56,33 @@ OWNER przekazał odczyt **tylko do odczytu** z nowej Fedory KDE (2026-10-27):
 5. Nie przenosić całego `/etc/tuned`, `/etc/sysctl.d`, `/etc/modprobe.d` ani `outputs.ron` z COSMIC do KDE.
 
 To jest aktualizacja audytu. **Żadnych ustawień na komputerze OWNER nie zmieniono przez tę operację GitHub.**
+
+
+## POWERDEVIL / KSCREEN — odczyt OWNER po reinstalacji KDE (2026-10-27)
+
+OWNER uruchomił `systemd-inhibit --list --no-pager` oraz `kscreen-doctor -o` na Fedora 44 KDE Plasma 6.7.5 Wayland. Odczyt tylko do celów diagnozy, bez zmian systemowych.
+
+### Rzeczywista obsługa klapy
+
+- `PowerDevil` trzyma **block inhibitor** dla `handle-power-key:handle-suspend-key:handle-hibernate-key:handle-lid-switch`, uzasadnienie `KDE handles power events`.
+- Pozostałe inhibitory `sleep` delay: ModemManager, NetworkManager, UPower, `kwin_wayland` (blokada ekranu przed uśpieniem).
+- Wniosek: w bieżącej sesji **PowerDevil KDE obsługuje zdarzenie zamknięcia klapy**; odtworzenie `90-thinfedora-lid.conf` nie jest dobrym pierwszym krokiem. Brak danych o aktualnych akcjach lid-close osobno dla baterii i AC.
+- Dokumentacja KDE Power Management wskazuje osobne profile *On AC Power*, *On Battery*, *On Low Battery*. Źródło: https://docs.kde.org/stable_kf6/en/powerdevil/kcontrol/powerdevil/ ; projekt KDE PowerDevil: https://github.com/KDE/powerdevil .
+- Źródło konfiguracji PowerDevil w upstream ma opcję `InhibitLidActionWhenExternalMonitorPresent` (domyślnie `true` w KConfig): https://github.com/KDE/powerdevil/blob/master/PowerDevilProfileSettings.kcfg . To nie jest dowód bieżącego ustawienia OWNER.
+
+### Rzeczywisty stan monitorów
+
+| Output | Połączenie | Aktywność | Tryb | Położenie | Skala / priorytet |
+|---|---|---|---|---|---|
+| `HDMI-A-1` (zewnętrzny) | connected | **enabled** | **1680×1050 @ 59.95 Hz**, wybrany tryb | **0,0** | 1, **priority 1** |
+| `eDP-1` (matryca) | connected | **disabled** | dostępny 1920×1080 @ 60.05 Hz, ale wyłączony | historycznie wyświetlane 0,0 | 1, priority 1 (nie oznacza aktywnego ekranu) |
+
+Bieżący układ **odpowiada intencji układu monitorów z COSMIC** (zewnętrzny jako aktywny, początek pulpitu 0,0, matryca wyłączona). **Konfiguracji `outputs.ron` nie importujemy do KScreen**. Z raportu KDE: jasność HDMI 75%, eDP 100% (eDP wyłączony); nie zakładać, że jest to celowe odtworzenie poprzednich wartości.
+
+### Brakujący test funkcjonalny
+
+Nadal **nie wiemy**, jak PowerDevil zachowa się przy zamknięciu klapy na samej baterii i przy zasilaczu; samo `systemd-inhibit` i `kscreen-doctor` tego nie weryfikuje.
+
+**Następny krok:** OWNER ma sprawdzić graficznie Ustawienia systemowe KDE → Zarządzanie energią: profile *Na baterii* i *Na zasilaczu* (ewentualnie Niski poziom baterii), zwłaszcza akcję `When laptop lid closed` i opcję wykonania akcji także gdy podłączony monitor zewnętrzny. W pierwszym etapie tylko odczyt, żadnego zamykania klapy ani restartowania usług podczas pracy. Potem uzgodnić oczekiwaną semantykę z poprzednim rezultatem COSMIC (zewnętrzny monitor aktywny przy zamkniętej klapie również na baterii) i zaplanować odwracalny test z zapisanymi danymi.
+
+**Pozostałe luki nadal otwarte:** różnica TuneD `balanced` vs historyczne `balanced-battery`; motyw FX OS GRUB jeszcze nieprzywrócony; `blacklist uvcvideo` nieprzywrócone; sysctl/modprobe i ewentualne skrypty bez pełnego audytu. Night Color KDE 5000 K, Conky V3/autostart i ZRAM 8 GiB / prio 100 już potwierdzone.
