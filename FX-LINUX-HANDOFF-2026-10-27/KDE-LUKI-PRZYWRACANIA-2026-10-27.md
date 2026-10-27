@@ -135,3 +135,16 @@ OWNER przekazał wyniki porównania z rozpakowanego COSMIC (`~/FX-Linux-Odzysk/e
 - **Decyzja techniczna na podstawie dostępnych faktów:** nie odtwarzać `sysctl.conf`, `tuned-main.conf` ani starego symlinka z archiwum w ciemno. Nie wykazano utraconych dostosowań w tych konkretnych ustawieniach.
 
 **Następny bezpieczny krok:** read-only sprawdzenie starych i nowych plików `/etc/modprobe.d`, ze szczególnym uwzględnieniem starego `disable-webcam.conf` zawierającego `blacklist uvcvideo`. Tylko OWNER decyduje, czy kamerka ma być blokowana. Potem bezpieczeństwo aktualnego GRUB/EFI/Windows przed ewentualnym przywróceniem wyglądu FX OS. Nie zmieniać działającego FenixSystem, Night Color 5000 K, klapy ani obecnego TuneD.
+
+
+## OWNER read-only comparison — modprobe.d and sysctl.d results
+
+OWNER uruchomił porównanie plików `~/FX-Linux-Odzysk/etc/modprobe.d` (archiwum Fedora COSMIC) z `/etc/modprobe.d` w działającej Fedora KDE. Wynik testu istnienia i `cmp -s`:
+
+- **10 plików identycznych**: `batman-adv-blacklist.conf`, `firewalld-sysctls.conf`, `floppy-blacklist.conf`, `l2tp_eth-blacklist.conf`, `l2tp_netlink-blacklist.conf`, `l2tp_ppp-blacklist.conf`, `lockd.conf`, `nvdimm-security.conf`, `rds-blacklist.conf`, `tuned.conf`.
+- **3 pliki obecne w archiwum COSMIC, ale nieobecne w tym samym miejscu KDE**: `disable-webcam.conf`, `kvm.conf`, `vhost.conf`. Ich nieobecność **nie dowodzi**, że są to unikalne lub potrzebne modyfikacje; `kvm.conf` i `vhost.conf` muszą zostać ocenione według zawartości. Wcześniej źródłowe `disable-webcam.conf` potwierdzono jako pojedynczy wpis `blacklist uvcvideo`, który wyłącza automatyczne ładowanie sterownika kamer UVC; OWNER musi sam zdecydować, czy kamerę ponownie blokować.
+- `find /etc/sysctl.d` na KDE: `99-sysctl.conf -> ../sysctl.conf` — ten sam link co w archiwum COSMIC; brak wykazanej różnicy w tej lokalizacji.
+
+**Wniosek:** `modprobe.d` nie przywracać hurtowo. Obejrzeć tylko tekst trzech brakujących plików, a zwłaszcza sprawdzić sens i ewentualne źródło pakietowe wpisów `kvm.conf`, `vhost.conf`. Przed jakimikolwiek zapisami do `/etc/modprobe.d` wymagana świadoma decyzja OWNER. Ocena ograniczona do porównanych ścieżek, nie do wszystkich możliwych parametrów sterowników.
+
+**Następny krok read-only:** `for n in disable-webcam.conf kvm.conf vhost.conf; do echo "$n"; sed -n '1,120p' "$HOME/FX-Linux-Odzysk/etc/modprobe.d/$n"; done` z kontrolą istnienia pliku; ewentualnie `lsmod` / `modinfo` dla zrozumienia bieżącej obsługi sprzętu, bez zmian stanu. Następny niezależny, potencjalnie bardziej ryzykowny etap: rozpoznanie aktualnego GRUB/BLS/Windows Boot Manager przed przywracaniem wyglądu FX OS.
