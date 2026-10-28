@@ -109,3 +109,14 @@ Important: `Icon=signal-desktop` and `StartupWMClass=signal` match current offic
 Behavior from OWNER screenshot: generic blank-paper icon in launcher and app menu while Signal is not running; actual blue Signal icon appears after launching. Missing installed icon is a plausible cause, **not yet verified**.
 
 Next step: read-only lookup of icon in user and system theme paths and AppImage executable. If no icon is registered, extract from the existing AppImage and install only the image in user icon theme, without rewriting the working launcher, resetting Plasma, removing favorites, or reinstalling Signal. No on-device fix was made in this documentation update.
+
+
+## Signal AppImage — missing installed icon confirmed by OWNER
+
+OWNER confirmed read-only diagnostic on 2026-10-28: Signal AppImage exists as executable `~/.local/bin/signal-desktop.AppImage` (~138 MB); `rpm -q signal-desktop` returned not installed; icon lookup produced **no matches** for `signal-desktop.*` or `signal.png` under the checked user and system icon directories.
+
+Together with previously verified `~/.local/share/applications/signal-appimage.desktop` containing `Icon=signal-desktop` and `StartupWMClass=signal`, this supports a missing icon-registration diagnosis. The AppImage's embedded graphic has not yet been extracted or inspected, so no on-device fix can be claimed.
+
+Safe user-level repair planned: run the already-owned AppImage with `--appimage-extract` inside an isolated folder under `~/FX-Linux-Odzysk`, locate authentic `signal-desktop.png` under `usr/share/icons/hicolor/*/apps` or AppDir root, validate PNG MIME and copy to matching `~/.local/share/icons/hicolor/<size>/apps/signal-desktop.png`. No `sudo`, no edits to the desktop entry, no reset of Plasma and no Signal reinstall. Official AppImage docs: https://docs.appimage.org/user-guide/run-appimages.html and https://docs.appimage.org/reference/appdir.html. After user action, confirm icon in menu and pinned panel while Signal is closed; only then mark PASS.
+
+Private user's absolute home path and private AppImage contents are not committed to GitHub.
