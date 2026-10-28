@@ -65,3 +65,12 @@ Własna ikona menu FX (źródło i prawa autorskie), akcenty, typografia, spójn
 ## Następny wkład OWNER
 
 Po ustawieniu górnego panelu w GUI przesłać zrzut aktualnego pulpitu. Wówczas dobrać właściwe rozmieszczenie i rozmiary, uwzględniając FenixSystem po prawej. Niebieski/bursztynowy kolor pulpitu pozostaje propozycją do oceny.
+
+
+## 2026-10-28 — visual verification: two overcrowded panels, restore a single panel first
+
+OWNER pokazał zrzut pulpitu Fedora KDE Plasma Wayland po ręcznej próbie dodania górnego panelu. **Stan wizualny niezaakceptowany:** dwa pełnoszerokie panele (górny i dolny), każdy z powielonymi zestawami ikon i kontrolek; w tym stanie nie jest to docelowy górny panel + lewy dock. Conky FenixSystem V3 jest widoczny po prawej, tapeta FX OS pozostaje bez zmian. Sam screenshot nie dowodzi czy powtarzalność pochodzi z kilku widgetów Task Manager, przypiętych aplikacji czy innych osobnych widżetów — najpierw inspekcja w trybie edycji.
+
+**Plan naprawczy bezpieczną metodą natywnego KDE GUI:** (1) skopiować bieżący `~/.config/plasma-org.kde.plasma.desktop-appletsrc` do prywatnego folderu odzysku, bez zapisu prywatnych dotfiles do GitHub; (2) usunąć wyłącznie nowo dodany górny panel przez `Wejdź w tryb edycji` → konfiguracja tego panelu → `Usuń panel`, zostawić oryginalny dolny jako drogę powrotu; (3) sprawdzić wygląd dolnego, ocenić powielone elementy; (4) następnie usuwać tylko rozpoznane zbędne widżety (np. duplikaty Menedżera zadań) w GUI, zachowując jedno menu, jedno miejsce na zadania, jedną tackę i zegar; (5) dopiero po działającym jednym panelu zmienić jego położenie i ewentualnie dodać *pusty* lewy dock. Nie wykonywać równoczesnego usuwania obu paneli, kasowania appletsrc, `plasmashell --replace`, globalnego resetu Plasma ani instalowania Latte Dock.
+
+**Status:** rozpoznano problem wyłącznie wizualnie na zrzucie OWNER; nie potwierdzono jeszcze usunięcia panelu ani testu wylogowania. Dokumentację wolno aktualizować, ale nie twierdzić, że fizycznie naprawiono konfigurację użytkownika. GRUB pozostaje odłożony; Night Color 5000 K i Conky pozostają niezmienione.
