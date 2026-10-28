@@ -85,3 +85,14 @@ OWNER pokazał zrzut pulpitu Fedora KDE Plasma Wayland po ręcznej próbie dodan
 2026-10-28: OWNER reported `przywróciło` after running the rollback command that selects a single original `~/FX-Linux-Odzysk/kde-visual-backup-*/plasma-org.kde.plasma.desktop-appletsrc`, stores the current two-panel layout separately, and restarts only the Plasma user shell service. **RESTORE PASS according to OWNER** — the prior Plasma panel arrangement was restored. No claim is made of an independently reviewed post-restore screenshot or fresh-login test. Avoid running the same restore again unnecessarily.
 
 The failed visual first iteration exposed two full-width panels with duplicate app icons. Next iteration: **do not add another full panel or apply global theme presets blindly**. Start by inspecting the restored single-panel arrangement and its individual widgets in KDE edit mode; modify one controlled component at a time, preserving the current working layout and backup. Conky FenixSystem KDE V3, FX wallpaper, login wallpaper, Night Color 5000 K and the paused GRUB restore are outside scope.
+
+
+## OWNER screenshots — single panel recovered, Signal launcher icon missing until running
+
+2026-10-28. OWNER supplied two screenshots of restored Fedora KDE desktop. The duplicated two-panel state is gone. **One full-width top panel** is visible with application launchers on the left and tray/clock on the right; FenixSystem V3 remains visible at the upper right of FX OS wallpaper.
+
+New defect reported: **Signal Desktop icon missing in the pinned top panel and the application menu while Signal is not running**. The launcher shows a generic blank document icon, but after Signal is launched the correct blue Signal icon becomes visible. OWNER states the same symptom is present in the app menu before launch. This is **not evidence that Signal itself is broken**; a stale or incorrect icon name/path in a `.desktop` entry, duplicated launchers, Flatpak/AppImage export, or Plasma application identification/icon caching are possible explanations, unconfirmed.
+
+First diagnostic must be read-only: detect Signal installation type, inspect exact `.desktop` entries in the user's application directory, system application directory and Flatpak export locations; capture only Name, Icon, Exec, StartupWMClass, X-Flatpak and desktop file paths. Do not reset Plasma, purge cache, reinstall Signal, remove pinned applications, or overwrite desktop files until root cause is identified. Official Signal Linux documentation includes AppImage launchers with `Icon=signal-desktop` and `StartupWMClass=signal`: https://support.signal.org/hc/pl/articles/360008216551-Instalacja-aplikacji-Signal .
+
+**No on-device Signal icon fix has been applied or verified in this checkpoint**.
