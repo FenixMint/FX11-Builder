@@ -135,3 +135,18 @@ Distinct mechanisms to test:
 4. Potential but UNCONFIRMED desktop-id mismatch: current Signal source package.json declares `desktopName: signal.desktop` (https://github.com/signalapp/Signal-Desktop/blob/main/package.json), whereas OWNER launcher is `signal-appimage.desktop`. Electron's app.setBadgeCount links badges to desktop file IDs via LauncherEntry D-Bus API: https://www.electronjs.org/docs/latest/api/app . The current AppImage's actual embedded app version/config was not checked; do not rename launchers or repin without testing and backup.
 
 **Safe next step**: inspect GUI notification settings, Signal version, tray setting, and conduct an ordinary self-chosen incoming message test with Signal minimized. Only observe badges and notifications; do not ask for private message content. Do not change Signal database/profile, reinstall into .deb on Fedora, downgrade Signal, clear Plasma state, or install third-party notification daemons. No unread/status notification test is confirmed yet.
+
+
+## Signal notification preferences — OWNER screenshot reviewed
+
+2026-10-28: OWNER supplied a screenshot of Signal Desktop's own **Powiadomienia** settings, read only (the image is private and not stored in GitHub). Confirmed UI values:
+- `Włącz powiadomienia` ON; display level `Imię, treść i działania`; muted notification class allows calls/mentions/replies.
+- `Powiadomienia o reakcjach` ON, `Przypomnienia o nieprzeczytanych` ON, `Wyróżnij okno aplikacji Signal, gdy pojawi się powiadomienie` ON.
+- Both push-notification sounds and in-chat sounds ON.
+- `Licznik nieodczytanych wiadomości` configured as `Nieodczytane wiadomości`; including muted chats in application count OFF.
+
+**Signal-side preferences set / reported, but no incoming-message delivery test performed yet.** Window highlighting is not proof of a badge counter. KDE Plasma has an independent `System Settings → Notifications → Application Progress and Badges → Notification badges → Show in task manager` setting and per-app badge/popups/notification-history permissions, per official KDE documentation: https://docs.kde.org/trunk_kf6/en/plasma-workspace/kcontrol/notifications/index.html .
+
+Electron's Linux API `app.setBadgeCount()` requires a launcher matching the app `.desktop` identification: https://www.electronjs.org/docs/latest/api/app . Current launcher is `signal-appimage.desktop` (official Signal AppImage integration instructions also suggest that filename: https://support.signal.org/hc/en-us/articles/360008216551-Installing-Signal). A possible mismatch is a **hypothesis only**: do not rename the launcher, clear Plasma cache, or alter pinned tasks before testing whether a badge fails with the KDE setting enabled.
+
+**Next:** OWNER inspect KDE's global and Signal-specific badge/popups settings; send an unread test message to Signal while minimized, look for (a) notification popup, (b) numbered badge on the pinned task icon, (c) tray behavior if enabled, and (d) clearance on reading. Do not disclose message contents. If notifications work but badges do not, check actual AppImage desktop name and test narrow reversible desktop-ID adjustment. No fix beyond static icon installation yet.
