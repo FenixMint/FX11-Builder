@@ -96,3 +96,16 @@ New defect reported: **Signal Desktop icon missing in the pinned top panel and t
 First diagnostic must be read-only: detect Signal installation type, inspect exact `.desktop` entries in the user's application directory, system application directory and Flatpak export locations; capture only Name, Icon, Exec, StartupWMClass, X-Flatpak and desktop file paths. Do not reset Plasma, purge cache, reinstall Signal, remove pinned applications, or overwrite desktop files until root cause is identified. Official Signal Linux documentation includes AppImage launchers with `Icon=signal-desktop` and `StartupWMClass=signal`: https://support.signal.org/hc/pl/articles/360008216551-Instalacja-aplikacji-Signal .
 
 **No on-device Signal icon fix has been applied or verified in this checkpoint**.
+
+
+## Signal Desktop AppImage — identified launcher and icon lookup
+
+OWNER confirmed Signal uses AppImage rather than Fedora RPM or Flatpak. Read-only scan found only the user's launcher at `~/.local/share/applications/signal-appimage.desktop`.
+
+Launcher fields: `Name=Signal Desktop`, `Exec=~/.local/bin/signal-desktop.AppImage %U` (repo anonymized: actual desktop file uses absolute home path), `Icon=signal-desktop`, `StartupWMClass=signal`.
+
+Important: `Icon=signal-desktop` and `StartupWMClass=signal` match current official Signal AppImage launcher guidance: https://support.signal.org/hc/en-us/articles/360008216551-Installing-Signal . Do NOT assume that this icon name is incorrect. Test whether a matching `signal-desktop` icon is actually available in XDG icon directories, including user icon themes. The AppImage format includes its main icon under `.DirIcon` / root icon or `usr/share/icons`: https://docs.appimage.org/reference/appdir.html .
+
+Behavior from OWNER screenshot: generic blank-paper icon in launcher and app menu while Signal is not running; actual blue Signal icon appears after launching. Missing installed icon is a plausible cause, **not yet verified**.
+
+Next step: read-only lookup of icon in user and system theme paths and AppImage executable. If no icon is registered, extract from the existing AppImage and install only the image in user icon theme, without rewriting the working launcher, resetting Plasma, removing favorites, or reinstalling Signal. No on-device fix was made in this documentation update.
