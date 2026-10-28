@@ -221,3 +221,8 @@ Native login background configuration for PLM: KDE System Settings → Login Scr
 PLM 6.7 has some upstream wallpaper configuration bugs (e.g., KDE bug 523850 and 527743), so if GUI does not stick, first inspect `/etc/plasmalogin.conf` and installed wallpaper ownership; do not restart or disable display-manager services while user is working.
 
 Status: OWNER priority documented; wallpaper change **not yet verified or performed**.
+
+
+## Ekran logowania — OWNER ustawił tło
+
+**2026-10-28:** OWNER potwierdził „ustawione” po skonfigurowaniu tapety menedżera logowania na Fedora 44 KDE. Traktujemy to jako **konfigurację zastosowaną według relacji OWNER**; nie potwierdzono jeszcze wyglądu po rzeczywistym wylogowaniu i ponownym logowaniu. Nie zakładać, czy aktywny jest PLM czy SDDM, jeśli nie został przekazany wynik identyfikacji usługi. Priorytet jasnego ekranu logowania został obsłużony ustawieniem ciemnego tła bez zmiany GRUB, EFI, KDE Night Color ani Conky. W razie potrzeby potwierdzić wizualnie na następnym zwykłym ekranie logowania. **GRUB FX OS pozostaje odłożony, niezainstalowany** — przed powrotem do modyfikacji rozruchu zastosować uzgodnione bramki i aktualne bezpieczne sprawdzenia.
