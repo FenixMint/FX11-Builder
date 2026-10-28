@@ -208,3 +208,16 @@ Read-only tests established Fedora BLS entries, rescue, Windows Boot Manager, UE
 Authorized scope is narrow: backups, copying the recovered theme, graphics configuration and validating newly generated GRUB menus with rollback.
 No permission to alter EFI, UEFI boot order, partitions, kernel BLS entries or Windows installation.
 Approval recorded; this document does NOT mean a local restore or reboot has occurred.
+
+
+## OWNER priority change — dark login-screen wallpaper first
+
+OWNER changed task order on 2026-10-28: **highest immediate priority is replacing the overly bright login-manager wallpaper with a dark background**. GRUB FX OS theme installation is **paused**, despite prior authorization; no local GRUB modification is confirmed.
+
+**Important Fedora 44 discovery:** a new Fedora 44 KDE installation defaults to **Plasma Login Manager (PLM / `plasmalogin`)**, not SDDM. Official Fedora change: https://fedoraproject.org/wiki/Changes/PlasmaLoginManager . The active display manager on OWNER's machine has NOT yet been checked. Do not edit SDDM configuration assuming it is active.
+
+Native login background configuration for PLM: KDE System Settings → Login Screen → Configure Appearance → select existing dark wallpaper → Apply and authenticate; verify on next logout. If needed, `Apply Plasma Settings...` is a separate optional action; distinguish login wallpaper from KDE user lockscreen wallpaper. SDDM alternate path if active: System Settings → Colors & Themes → Login Screen (SDDM) → Change Background → Apply. No changes to GRUB, EFI or login services permitted by this reprioritization.
+
+PLM 6.7 has some upstream wallpaper configuration bugs (e.g., KDE bug 523850 and 527743), so if GUI does not stick, first inspect `/etc/plasmalogin.conf` and installed wallpaper ownership; do not restart or disable display-manager services while user is working.
+
+Status: OWNER priority documented; wallpaper change **not yet verified or performed**.
