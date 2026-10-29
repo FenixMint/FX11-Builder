@@ -836,3 +836,14 @@ OWNER supplied full screenshot after successful `PANEL 85 TRYB=fit MIN=64 MAX=82
 **Acceptance status:** length auto-fit `fit` and compact vertical visual appearance **SCREENSHOT PASS** (no longer the prior 520px blank-tall panel). **Not yet verified:** actual change in panel height upon adding/removing a Quicklaunch shortcut; real KWin maximized-window reserved work area. Screenshot shows desktop wallpaper and no foreground/maximized application window. Do not claim either test passed from this image. Next minimal check: maximize Firefox as a normal window (not fullscreen), verify its left edge stops to the right of dock; if so PASS. Keep Oxygen, top app taskbar and Signal config untouched.
 
 **No new local device actions** performed by GitHub checkpoint update. Existing rollback backup `~/FX-Linux-Odzysk/fx-dock-autofit-20261029-185024-Amsh` remains available.
+
+
+## 2026-10-29 — OWNER confirms maximized windows do not cover FX Dock
+
+OWNER performed the explicitly requested maximized-window check and reported: **`jest ok. nie zasłania`** ('It's OK. It does not obscure [the dock]'). This **OWNER-verifies PASS** for a normal maximized window staying clear of the genuine left Plasma panel containing Quicklaunch. Native fullscreen/window F11 is not tested by this confirmation and need not be conflated.
+
+Previously verified local API readback: `PANEL 85`, `lengthMode='fit'`, `minimumLength=64`, `maximumLength=820`, `height=64` (64 px width), and `hiding='none'`. A full screenshot visually confirmed single-column colorful Quicklaunch favorites, compact centered Oxygen-themed left dock with no extra large blank space; top horizontal panel 55 and complete FenixSystem V3 remained intact. User replaced desktop Quicklaunch with new Quicklaunch inside panel 85, so the desktop-widget overlay regression is fixed for maximized normal windows.
+
+**Acceptance checkpoint:** left dock geometry compact auto-fit visual PASS; normal maximized-window exclusion OWNER PASS; favorites-only Quicklaunch functional design established (dynamic resizing after adding/removing selected launcher remains an optional future test, not separately reported). **Do not adjust panel geometry further or reintroduce old `icontasks` widget 82**. Keep Oxygen, original FX wallpaper, full FenixSystem V3, and upper taskbar with its dynamic running icons. Follow-up possible only on OWNER's request (new custom FX menu / independent upper-bar shortcuts/Signal count overlay), not needed to declare dock geometrically complete.
+
+Rollback snapshot from before auto-fit exists privately at `~/FX-Linux-Odzysk/fx-dock-autofit-20261029-185024-Amsh`. No local system changes made by this documentation update.
