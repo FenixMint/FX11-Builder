@@ -827,3 +827,12 @@ The guard passed for **exactly two panels**, top 55 at `top` with widget 58 stil
 **Status:** `fit` configuration **PASS**; actual visual shrinking/expanding with add/remove launcher is **not independently demonstrated** yet, nor has maximizing a window against the newly populated real panel been explicitly tested. Next step: screenshot for visual fit, then optionally add/remove a temporary Quicklaunch shortcut and maximize a normal app window to ensure it stays behind/away from the always-visible panel. Do not change global theme, top panel 55, Signal icon/notifications, or detailed FenixSystem V3. User should not need to restart Plasma or reset launchers.
 
 **Product contract retained:** top bar has chosen fixed system apps + dynamic running tasks; left panel only explicitly selected favorites with one-column Quicklaunch; Oxygen is approved as current glossy Plasma Style. No direct local-device modifications made in this GitHub documentation commit.
+
+
+## 2026-10-29 — screenshot confirms left Quicklaunch panel auto-fit visually
+
+OWNER supplied full screenshot after successful `PANEL 85 TRYB=fit MIN=64 MAX=820 SZEROKOSC=64` readback. Screenshot **visually confirms** LEFT Quicklaunch dock is a single thin, vertically centered Oxygen-framed bar, with six visible colorful shortcut icons and minimal extra empty area. Top horizontal panel remains full-width, with launcher / selected app icons at left, system tray / clock at far right. Original full-size detailed FenixSystem V3 (CPU, RAM, SSD, thermal, battery, network and uptime) remains unchanged; FX OS wallpaper intact.
+
+**Acceptance status:** length auto-fit `fit` and compact vertical visual appearance **SCREENSHOT PASS** (no longer the prior 520px blank-tall panel). **Not yet verified:** actual change in panel height upon adding/removing a Quicklaunch shortcut; real KWin maximized-window reserved work area. Screenshot shows desktop wallpaper and no foreground/maximized application window. Do not claim either test passed from this image. Next minimal check: maximize Firefox as a normal window (not fullscreen), verify its left edge stops to the right of dock; if so PASS. Keep Oxygen, top app taskbar and Signal config untouched.
+
+**No new local device actions** performed by GitHub checkpoint update. Existing rollback backup `~/FX-Linux-Odzysk/fx-dock-autofit-20261029-185024-Amsh` remains available.
