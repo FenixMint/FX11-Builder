@@ -669,3 +669,20 @@ OWNER reports unpinning old app pins from TOP panel and requests the next behavi
 4. After all chosen apps work and OWNER accepts Signal badge behavior, remove **only original left `icontasks` widget 82** from panel 81 via GUI, leaving new Quicklaunch and top task manager 58 untouched. Otherwise remove trial Quicklaunch and original dock remains as before.
 
 **Status:** design requirement OWNER-stated; technical analysis complete; no changes to user's machine executed; next is read-only plugin availability check. No automatic launchers list rewrites, script-based panel reset, modifications to Signal shortcuts, or global theme changes.
+
+
+## 2026-10-29 — Quicklaunch 6.7.5 already installed; former path test was a false negative
+
+OWNER ran:
+```text
+rpm -q kdeplasma-addons
+kdeplasma-addons-6.7.5-1.fc44.x86_64
+rpm -ql kdeplasma-addons | grep '/org.kde.plasma.quicklaunch/' | head -n 10
+(no matching lines)
+```
+
+**Correction to previous instructions:** the grep assumed a **directory** `/org.kde.plasma.quicklaunch/`, but Fedora 44 `kdeplasma-addons` ships the Quicklaunch **compiled native plugin** `org.kde.plasma.quicklaunch.so` under the Plasma applet plugin path. No `.../org.kde.plasma.quicklaunch/` directory is required. The empty grep is thus a *false negative*. Verified from Fedora 44 package file listing: https://packages.fedoraproject.org/pkgs/kdeplasma-addons/kdeplasma-addons/fedora-44-updates.html . Follow-up read-only proof on device: `rpm -ql kdeplasma-addons | grep 'org.kde.plasma.quicklaunch.so'`.
+
+**Next user-run steps (not yet completed):** back up `plasma-org.kde.plasma.desktop-appletsrc` and `plasmashellrc` under `~/FX-Linux-Odzysk/dock-quicklaunch-before-*`; then enter editing mode of **existing LEFT panel 81**, Add Widgets, find `Szybkie uruchamianie` / `Quicklaunch` and add alongside existing icons-only Task Manager `82` — **do not remove 82 yet**. Add one or two chosen apps to Quicklaunch, test icon, vertical arrangement, reordering, test an unrelated app launching and remaining absent from Quicklaunch, and check Signal notification badge compatibility. Only after OWNER approves full working curated icon list should 82 be removed from the left panel while preserving the TOP task manager `58`.
+
+Current goal remains left panel **selected apps only**, top panel 3 system pins + dynamic running tasks, preserving Oxygen, top right tray/clock, wallpaper, and detailed FenixSystem V3. No user device modifications have been performed by this checkpoint write.
