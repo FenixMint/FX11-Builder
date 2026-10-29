@@ -293,3 +293,25 @@ User did not provide terminal stdout for the widget insertion, but screenshot is
 **Next safe step:** prior to changing the upper panel, read-only inventory of each panel's `id`, `location`, and each `widget.id`, `widget.type` via KDE Plasma Scripting `panels()` / `panel.widgetIds` / `panel.widgetById(id)`. The current left dock geometry was set on panel ID 81, but inspect runtime IDs rather than assuming unverified top IDs. KDE official API: https://develop.kde.org/docs/plasma/scripting/api/ . No changes to the top panel until confirmed widget topology; then use another timestamped home-only backup and remove **only the identified top task manager** after confirming the left dock accepts needed pinned apps. Preserve the existing top launcher widget (future round FX icon), systray, clock and working Signal notification state. Keep FX V3 exactly as is.
 
 Status: **Left dock populated VISUAL PASS**; dock runtime/feature/after-relogin test not yet recorded; clean top bar, FX menu icon, workspace switcher and FX OS custom launcher still pending.
+
+
+## 2026-10-29 — OWNER final left dock application order and running-task overflow
+
+**Binding OWNER correction superseding the immediately preceding provisional order and any screenshot-default pin order.** The **native Plasma left dock** is to show the following pinned apps **top to bottom, exactly in this order**:
+
+1. Firefox
+2. Thunderbird
+3. LibreWolf
+4. Signal
+5. Terminal (on current KDE installation, identify actual terminal desktop entry; likely Konsole but do not assume without read-only validation)
+6. RustDesk
+7. Ustawienia systemowe (KDE System Settings)
+8. Discover
+9. KWrite
+10. and after: **other currently running applications**, automatically appearing below the nine pinned items; apps already pinned at positions 1–9 must **not** appear a second time when running.
+
+Implementation: one `org.kde.plasma.icontasks` widget already visually confirmed on left panel ID 81. Its pins are independent of upper panel's pins, so **only configure the left task-manager widget**, leaving top panel intact until later deliberate cleanup. Verify installed `.desktop` identifiers for Thunderbird, LibreWolf, Signal AppImage (`signal-appimage.desktop`), Terminal/Konsole, RustDesk, Discover, KWrite by read-only audit before writing pinned-launcher URLs. Do not invent app IDs or implicitly install missing apps. Confirm whether runtime task manager correctly groups existing pinned and running windows under one icon; specifically preserve Signal window identification/notifications.
+
+**Geometry caveat:** previous dock was deliberately fixed to length 450px and thickness 58px. Nine pinned icons plus additional running apps **may exceed this capacity** and create clipping/overflow. Later adapt length mode / constraints to content and available monitor height, or adjust icon sizing while preserving legibility; do not silently truncate desired apps. Keep dock vertically aligned, dark/floating. Before any Plasma widget change take new private backup of `~/.config/plasma-org.kde.plasma.desktop-appletsrc` and `~/.config/plasmashellrc`.
+
+Unchanged OWNER decisions: glowing circular FX launch icon belongs only at **far-left of the top panel**, not the dock; existing complete FenixSystem V3 is not to be changed, resized, moved or made compact; wallpaper/Signal notifications preserved. **This GitHub record does not claim the pin order was applied locally**.
