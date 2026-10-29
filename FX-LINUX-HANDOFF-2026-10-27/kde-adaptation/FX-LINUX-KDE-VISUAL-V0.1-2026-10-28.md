@@ -424,3 +424,12 @@ OWNER ran rollback and supplied full terminal output plus post-rollback screensh
 **OWNER-requested target sequence (remains unchanged):** Firefox, Thunderbird, LibreWolf, Signal, Dolphin, Konsole, RustDesk, Ustawienia systemowe, Discover, KWrite; below: unpinned currently running apps, no duplicates. Future FX menu dual actions Add to Panel (top) / Add to Dock (left) still separate, not yet implemented.
 
 Status now: usable left dock restored, desired 10-pin list NOT yet applied or tested. Previous icon/status integrations are not proven broken by the rollback.
+
+
+## 2026-10-29 — Thunderbird manually placed second after rollback
+
+OWNER supplied an updated full desktop screenshot after the instruction to pin Thunderbird via the native Icons-only Task Manager. **Visual confirmation:** left dock shows Firefox in first position, Thunderbird in second position with its usual blue bird/envelope logo. Remaining icons are not yet ordered as requested; top panel and full detailed FenixSystem V3 remain present. The screenshot alone does not prove Thunderbird stays pinned after exiting (OWNER has not supplied a closed-app persistence check), so classify this as **second-position VISUAL PASS**, persistence pending.
+
+**Next one-app-at-a-time step:** use existing LibreWolf icon, if present as a running task on left dock, right-click and choose native `Przypnij do menedżera zadań`, then move to third position under Thunderbird by drag-and-drop; if LibreWolf not running, launch from menu first. Avoid changing other pinned tasks and do not use the previously failing bulk `General/launchers` overwrite. Check its icon remains after exit and no duplicate task when reopened. Preserve Signal icon, top launcher, FenixSystem and the user's free rearrangement requirement.
+
+Current target list remains Firefox, Thunderbird, LibreWolf, Signal, Dolphin, Konsole, RustDesk, System Settings, Discover, KWrite; all other running apps afterward. Full widget control and menu's `Dodaj do panelu` vs `Dodaj do docka` remain future tasks. User has not yet confirmed persistence of Thunderbird after closing.
