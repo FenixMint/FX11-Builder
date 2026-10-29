@@ -353,3 +353,17 @@ Upstream KDE evidence: task manager model substitutes running task for matching 
 **Implementation plan/contract:** keep a single `org.kde.plasma.icontasks` widget on left panel ID 81. Remove or disable only the old top-panel task manager *after reviewing panel/widget inventory and snapshot*, leaving top FX launcher, workspace pager, systray, clock. Test native right-click **Pin to Task Manager** from the application menu once there is a single task-manager target. For the future dedicated FX OS menu, explicitly expose a user-facing **"Dodaj do panelu"** action that programmatically pins to the left `icontasks` widget, not Plasma containment `addWidget`/separate shortcut widgets. Implement and verify only once actual widget API and target selection are confirmed; this behavior **does not exist yet and must not be promised as already working**.
 
 Original top bar and the complete detailed FenixSystem V3 are outside modifications at this stage. Signal AppImage integration is preserved; future pin operations need a test for its application-ID pairing. No local system edits occurred with this documentation-only update.
+
+
+## 2026-10-29 — OWNER correction: separate Add to Panel vs Add to Dock actions
+
+**OWNER explicit correction superseding immediately previous add-to-panel routing requirement:** The future FX OS application-menu context menu **must expose TWO DISTINCT commands** (both user-visible in Polish):
+
+- **`Dodaj do panelu`** → add/create a persistent application launcher on the **TOP horizontal Plasma panel**. This must NOT silently redirect to the left dock.
+- **`Dodaj do docka`** → pin the application to the **LEFT vertical dock**, implemented with the existing single `org.kde.plasma.icontasks` widget, so an already-pinned and running app shows only once within this dock.
+
+Both actions should retain user configurability (remove, rearrange, persistence across restarts) and target the explicitly named destination. Top panel and left dock are separate targets; a launcher intentionally added to both can reasonably appear in both places (that is not a defect). The starting 10 dock pins and freedom to rearrange/pin more remain valid.
+
+**Status:** functional design contract explicitly decided by OWNER. The two-command context menu is **not yet implemented or tested**. Standard Plasma `Dodaj do panelu` might choose panel depending on its normal menu and current topology; custom FX OS menu must implement unambiguous routing instead of claiming current stock menu already does it. The first goal is preserving working existing top panel, left dock ID 81, current FenixSystem V3 and Signal notifications while continuing staged desktop changes.
+
+Earlier paragraph stating `Dodaj do panelu` should always pin to left dock is historical and **superseded by this note**. Do not rewrite historical screenshots or undo previous records.
