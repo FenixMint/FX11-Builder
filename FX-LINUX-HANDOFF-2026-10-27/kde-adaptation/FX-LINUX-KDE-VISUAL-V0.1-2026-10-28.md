@@ -207,3 +207,20 @@ Execution plan: (0) OWNER creates new private timestamped snapshot of existing `
 Only permission to guide/user-apply desktop changes is implied; **no remote device access** and nothing on the OWNER desktop is changed by this GitHub documentation write. No commands for EFI, GRUB, login manager, power, system services, monitor geometry, Night Color or Conky. Do not install third-party docks / layout packages. Do not interpret the proposed measurements as previously OWNER-approved exact values.
 
 Status: **plan resumed; backup/new dock construction not yet run or verified by OWNER**.
+
+
+## 2026-10-29 — three OWNER-supplied original FX OS visual references
+
+OWNER supplied three original FX OS desktop design reference images following an inaccurate newly generated alternative. **Do not treat the generated mountain/weather/calendar concept as the approved visual contract.** The actual visual direction is present in these three supplied screenshots. Images are not copied to the public GitHub repository; descriptions below are the approved-source visual audit, with selection as a reasoned recommendation pending direct OWNER confirmation.
+
+**Reference 1 (image 1):** Dark FX OS original cosmic/blue-ring wallpaper and very dark glass-like interface with glowing blue borders. Very narrow vertical dock at left, FX button top, icons below; **bottom horizontal taskbar** with FX logo, pinned apps, systray/date; large three-column FX OS start menu (left categories, center favorites and all apps, right Places/Settings/Recent/Power). This bottom-taskbar variation **differs from** the previously agreed top-panel direction, but its rich menu and dock aesthetics are useful reference.
+
+**Reference 2 (image 2, recommended layout baseline because matches documented concept):** Compact full-width **top panel** with FX app/menu button and a few launchers on left and system icons/time on right; separate thin **left vertical dock** with circular glowing FX icon, app launchers and bottom recycle bin; large dark, blue-border-glow **FX OS menu** below top bar with search row, left category column, favorites/recently used middle area and Places/System/Power right area; original FX OS wallpaper with luminous arc centered; detailed classic **FenixSystem monitoring** on the right. On displayed 1680x/approx 1050 screenshot, FenixSystem remains visible to right of opened menu. This best embodies **top panel + left dock + menu + FenixSystem**.
+
+**Reference 3 (image 3):** Compact top bar with numbered desktop/workspace switcher `1 2 3 4` and systray to right; left full-height dock; alternate two-column FX OS start menu with favorites left, app categories right; right-side compact three-ring monitoring card rather than full classic FenixSystem. Useful optional inspiration for virtual desktop switcher and simpler launcher layout but not mandatory features.
+
+**Distinguishing effects:** Black/dark-navy surfaces, electric blue/cyan neon edge lighting and subtle translucent/blur layers, rounded corners, FX-branded iconography and menu heading, original space-lit FX OS wallpaper. Reproduce these visually in KDE insofar as native widgets allow. Do not promise the custom, multi-column FX menu can be obtained merely by applying a built-in Application Launcher theme; that is a separate widget/launcher UI implementation or customization task requiring design/technical feasibility evaluation.
+
+**Best next implementation step remains safe and incremental:** Make fresh user-only copy of `plasma-org.kde.plasma.desktop-appletsrc`; preserve existing upper panel, wallpaper, FenixSystem and working Signal notifications; add one `Pusty panel` to left edge only, ~58px, centered, no widgets yet; verify screenshot. Later add icons-only task manager and reorganize existing top panel. Never use `Default Panel` or copy a populated panel. Owner has not yet confirmed running these steps in the resumed session.
+
+Status: visual references reviewed, reference 2 recommended as starting architecture; **no additional local Plasma modification is verified**.
