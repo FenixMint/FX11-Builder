@@ -455,3 +455,14 @@ The **first four icons are visually aligned with OWNER's target**, however Dolph
 Full top panel remains populated, systray and clock visible. Original full-sized detailed FenixSystem V3 remains on right. The saved screenshot is in the conversation, **not uploaded to the public repo**.
 
 Current status: manual dock arrangement **PARTIAL VISUAL PASS (positions 1-4)**; remaining order and pin permanence **PENDING**. No local device changes from this GitHub documentation write.
+
+
+## 2026-10-29 — OWNER wants vivid full-color icons in left dock
+
+**OWNER visual requirement:** user reports that icons inside left vertical dock seem slightly washed out / greyed compared with the original full-color app icons and wants **fully saturated/legible application icons**. This is an additional visual acceptance requirement, not merely a description of running state.
+
+From full-resolution screenshot: dock icons still contain their correct recognizable colors (Firefox orange, Thunderbird blue, LibreWolf cyan, Signal violet, Discover blue), but dark gray square task backgrounds and inactive/active state differences may affect perceived contrast. **The exact cause is not confirmed**. Prior 10-launcher bulk replacement and rollback were unrelated to icon appearance and must not be repeated. Upstream Plasma task manager highlights launched/active tasks using theme-dependent visual states; docs: https://userbase.kde.org/Plasma/Tasks and https://forum.manjaro.org/t/task-manager-pinned-app-behavior-plasma-6/161944 . Current KDE source Task.qml binds icon directly to task model `decoration`, with state `IsLauncher` and `IsMinimized`; avoid claiming a configurable universal 'icon saturation' checkbox without evidence.
+
+**Next non-destructive diagnostic:** compare one left-dock app icon while closed versus running and when hovered; distinguish actual desaturation of graphic from dark item background/highlight state. Only then tune left dock **appearance**, not the icon assets, global icon theme, Signal AppImage or entire Plasma shell; prioritize adjustments that can be tested and undone. Keep top panel and FenixSystem V3 unchanged. No on-device changes made from this documentation update.
+
+Status: **visual polish issue OPEN**; no claim that icons are repaired or recolored.
