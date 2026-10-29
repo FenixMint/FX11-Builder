@@ -792,3 +792,14 @@ Source reverified against `plasma-workspace` **v6.7.5** `shell/scripting/contain
 **Fallback if API migration fails:** read-only export of Quicklaunch current `[General] launcherUrls`, `maxSectionCount`, `showLauncherNames`, `enablePopup`, `popupUrls` from widget 84 (no write); then add a new Quicklaunch widget specifically to genuine left panel 85, configure its selected launcher URLs **only after verified mapping and OWNER approval**, test correct selected-only list and workspace reserve, and remove original desktop widget only when replacement is validated. GUI drag desktop applet into genuine panel is another non-destructive option. No appletsrc bulk rewrite, no full Plasma restart without reason. Oxygen, Signal and FenixSystem V3 are protected.
 
 **Status:** API transfer attempt OWNER-reported FAIL; exact error unknown; no on-device changes verified from that attempt. Read-only diagnostic pending.
+
+
+## 2026-10-29 — read-only inventory script parse failure; simplify prints before next diagnosis
+
+OWNER executed the requested read-only Plasma widget inventory but `gdbus` returned **`GDBus.Error:org.freedesktop.DBus.Error.Failed: Error: SyntaxError: Expected token numeric literal at line 5`**, backtrace `@:5`. This is a **parsing failure of the assistant-proposed script**, not proof of panel corruption; script body did not execute, and no user config restore is called for. The user-output script line 5 used string concatenation with an embedded JavaScript `"\\n"` escape in print, which is suspected to be problematic in this invocation path; **root parsing cause is not verified**.
+
+**Safety decision:** no new moving/replacing of Quicklaunch until inventory succeeds. Reissue a simpler **read-only** `evaluateScript` consisting only of straightforward `for` loops and simple `print(... + " | ")` calls, **NO `\n` sequences and no nested expressions inside string interpolation**. JavaScript syntax was locally checked with Node `--check` (not a test of KDE QJSEngine runtime). Inventory panel IDs, widget types, and whether the desktop still contains Quicklaunch. The last verified installed state before this error was TOP 55, LEFT 85 with 64px width/520px length/hiding none, desktop widget 84 under DESKTOP 54. Current parent of Quicklaunch remains **unknown** pending successful inventory.
+
+**Do not claim** the previous `addWidget` migration succeeded or failed definitively, since OWNER reported `nie przeszedł` without its terminal result. Reuse the existing private backups in `~/FX-Linux-Odzysk`; do not repeat destructive launcher-list edits, and keep Oxygen, top taskbar and full FenixSystem V3 untouched.
+
+Status: diagnosis script syntax FAIL; recovered workaround prepared, device state unchanged by this failed inventory.
