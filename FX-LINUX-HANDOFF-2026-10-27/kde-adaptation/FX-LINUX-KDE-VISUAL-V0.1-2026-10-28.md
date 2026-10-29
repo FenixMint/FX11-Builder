@@ -315,3 +315,30 @@ Implementation: one `org.kde.plasma.icontasks` widget already visually confirmed
 **Geometry caveat:** previous dock was deliberately fixed to length 450px and thickness 58px. Nine pinned icons plus additional running apps **may exceed this capacity** and create clipping/overflow. Later adapt length mode / constraints to content and available monitor height, or adjust icon sizing while preserving legibility; do not silently truncate desired apps. Keep dock vertically aligned, dark/floating. Before any Plasma widget change take new private backup of `~/.config/plasma-org.kde.plasma.desktop-appletsrc` and `~/.config/plasmashellrc`.
 
 Unchanged OWNER decisions: glowing circular FX launch icon belongs only at **far-left of the top panel**, not the dock; existing complete FenixSystem V3 is not to be changed, resized, moved or made compact; wallpaper/Signal notifications preserved. **This GitHub record does not claim the pin order was applied locally**.
+
+
+## 2026-10-29 — OWNER definitive flexible left-dock pin order (10 apps)
+
+**Latest and definitive OWNER specification**, superseding earlier provisional 7-, 9- and other 10-item pin orders: current requested top-to-bottom initial pinned launcher sequence is:
+
+1. Firefox
+2. Thunderbird
+3. LibreWolf
+4. Signal
+5. Dolphin
+6. Terminal (Konsole; use existing system terminal launcher, verify desktop ID)
+7. RustDesk
+8. KDE System Settings (Ustawienia systemowe)
+9. Discover
+10. KWrite
+11. and later: all OTHER **currently running** apps only, not in 1–10.
+
+**Crucial OWNER flexibility requirement:** this is the STARTING order, **not a permanently fixed/locked policy**. OWNER must be able to drag/rearrange the ten pinned launchers freely at any time, and to change future pinned apps without editing source code or running a reinstall script. There must be only one representation of each pinned app when running (launcher becomes task); unpinned running apps follow the pinned group. Keep `Menedżer zadań tylko z ikonami` (`org.kde.plasma.icontasks`) as **one widget** within left panel ID 81, `Sort=Manually` and grouping by app where supported. Do not construct ten separate KDE launcher widgets or create fixed per-app panel components, since then item reordering and identity become error-prone.
+
+Upstream KDE evidence: task manager model substitutes running task for matching pinned launcher and keeps pinned launchers separate, with unpinned running tasks afterward (https://api.kde.org/legacy/plasma/plasma-workspace/html/classTaskManager_1_1TasksModel.html). KDE Discussions confirms Icons-only Task Manager allows drag-to-reorder pinned icons among themselves, and running unpinned tasks among themselves, but not interleaving those categories, as desired (https://www.mail-archive.com/kde-bugs-dist%40kde.org/msg1186594.html). This is expected native behavior, not evidence of failure.
+
+**Geometry warning:** existing left panel ID 81 is 58px thick and 450px long, which may be insufficient for 10 pinned app slots plus running tasks. KDE Plasma native scripting API supports `lengthMode='fit'` to adapt panel to content (https://develop.kde.org/docs/plasma/scripting/api/). Change geometry as a separate user-verified step, possibly Fit content with sensible maximum length, preserving FenixSystem and upper bar. Do not assume exact icon pixel size, density or number of rows without seeing the result.
+
+**Next safe step:** inspect current Icons-only Task Manager widget ID/config and find matching app `.desktop` IDs (including AppImage Signal and possibly RustDesk/LibreWolf). Work within the single existing widget: pin missing apps, reorder by mouse in manual sort, test opening a pinned app keeps exactly one button, test another unpinned app is appended. Prefer existing working GUI pinning/reordering; if scripting launchers, back up before change, do not invent `applications:` URLs or reset whole Plasma configuration.
+
+**Status:** ORDER DESIGN / OWNER REQUIREMENT CONFIRMED, not yet applied to actual pinned order. No launcher or panel configuration was modified by this GitHub-only documentation update. Existing Signal notification integration and full FenixSystem V3 remain outside scope.
