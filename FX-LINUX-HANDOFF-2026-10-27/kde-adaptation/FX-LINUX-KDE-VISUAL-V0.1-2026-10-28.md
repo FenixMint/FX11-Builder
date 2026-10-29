@@ -433,3 +433,14 @@ OWNER supplied an updated full desktop screenshot after the instruction to pin T
 **Next one-app-at-a-time step:** use existing LibreWolf icon, if present as a running task on left dock, right-click and choose native `Przypnij do menedżera zadań`, then move to third position under Thunderbird by drag-and-drop; if LibreWolf not running, launch from menu first. Avoid changing other pinned tasks and do not use the previously failing bulk `General/launchers` overwrite. Check its icon remains after exit and no duplicate task when reopened. Preserve Signal icon, top launcher, FenixSystem and the user's free rearrangement requirement.
 
 Current target list remains Firefox, Thunderbird, LibreWolf, Signal, Dolphin, Konsole, RustDesk, System Settings, Discover, KWrite; all other running apps afterward. Full widget control and menu's `Dodaj do panelu` vs `Dodaj do docka` remain future tasks. User has not yet confirmed persistence of Thunderbird after closing.
+
+
+## 2026-10-29 — OWNER manually arranged dock icons after rollback
+
+OWNER wrote: `mam. ustawiłem kolejnosc` after instruction to manually pin and reorder the icons via the native KDE Icons-only Task Manager. Treat this as **OWNER-reported manual ordering completed**; the exact set and persistence of all ten pinned icons have not been independently inspected.
+
+The attached screenshot is a 1680x1-pixel strip; it does **not** contain a legible dock, so no visual verification is possible from this image. Avoid asserting precise resulting pin order or after-restart persistence as verified. Prior full screenshots confirmed left panel ID 81 and Icons-only Task Manager widget ID 82 and the upper panel + full FenixSystem V3 intact.
+
+Binding target remains, as an editable initial order: Firefox, Thunderbird, LibreWolf, Signal, Dolphin, Konsole, RustDesk, System Settings, Discover, KWrite; unpinned running applications follow without duplicates. Do not again overwrite `General/launchers` in bulk because this was proven to break icon rendering. Best next action is an optional **read-only** `widget.readConfig('launchers', '')` for left widget 82, plus a correctly-sized screenshot (or OWNER confirmation that all 10 appear) and later a persistence test. Keep the layout as OWNER arranged; do not force an order or touch FenixSystem V3.
+
+Status: manual arrangement **OWNER REPORTED**; visual verification not possible from current narrow attachment. No device changes made by the GitHub record.
