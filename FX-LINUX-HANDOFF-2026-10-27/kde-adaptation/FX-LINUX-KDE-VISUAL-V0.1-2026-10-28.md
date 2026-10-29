@@ -490,3 +490,19 @@ Verified technical evidence from upstream KDE: Plasma's Icons-only Task Manager 
 Immediate read-only next step: identify active icon theme (`kreadconfig6 --file kdeglobals --group Icons --key Theme`), Plasma theme (`kreadconfig6 --file plasmarc --group Theme --key name`), and installed Plasma/Frameworks versions (`plasmashell --version`, `rpm -q plasma-desktop plasma-workspace kf6-kirigami`), without any system changes. The OWNER has not yet approved an applet replacement, and no fix for icon saturation has been applied or tested.
 
 **Status:** hover response CONFIRMED, full-color requirement UNMET, further implementation gated by safe compatibility audit and OWNER's visual acceptance.
+
+
+## 2026-10-29 — KDE theme/version confirmed; color-rich dock requires targeted visual design
+
+OWNER read-only output on running Fedora 44 KDE Wayland:
+
+- Icon theme in `kdeglobals`: **`breeze-dark`**.
+- Plasma desktop style: **`default`**.
+- `plasmashell --version`: **6.7.5**.
+- RPM: `plasma-desktop-6.7.5-1.fc44.x86_64`, `plasma-workspace-6.7.5-1.fc44.x86_64`, `kf6-kirigami-6.31.0-1.fc44.x86_64`.
+
+Owner reports that hovered icon brightens slightly but retains a washed-out look and wants vivid fully colorful dock icons. KDE upstream `plasma-desktop/applets/taskmanager/qml/Task.qml` binds `Kirigami.Icon.active` to `task.highlighted` and sources icon from `task.model.decoration`; KDE Kirigami Icon documentation confirms Active mode adds an icon effect. KDE KIconThemes current implementation applies `KIconEffect::toActive` (gamma) for Active state and keeps Default state unmodified, so avoid asserting that default KDE task icon is deliberately grayscale or that changing `kdeglobals [DesktopIcons] DefaultEffect` will reliably fix it in KF6. Source: https://api.kde.org/qml-org-kde-kirigami-primitives-icon.html and https://github.com/KDE/kiconthemes/blob/master/src/kiconloader.cpp .
+
+**Diagnosis:** stock Breeze Dark/default Plasma style, no evidence of missing package or misconfigured icon theme. Stronger colors may require a targeted user-local design of task-item backgrounds/visual emphasis and potentially custom icon rendering, rather than a nonexistent stock 'saturation' control. Changing global icon themes, application files, or system QML is not authorized as a dock-only adjustment. Changing `widgets/tasks.svg` can alter task buttons' visual contrast but does NOT inherently increase icon bitmap color saturation. A custom task-manager plasmoid would require independent compatibility tests before replacing the working current one.
+
+**Safe next phase:** explore the actual source icon appearance and user-local Plasma theme task frame options without changing existing left widget `82` or pinned launchers. Since the previous bulk launcher mutation failed, do not repeat any replacement/reset of icon task manager. Preserve upper panel, Signal notifications and the existing detailed FenixSystem V3. Current state is diagnostic only; no full-color fix applied.
