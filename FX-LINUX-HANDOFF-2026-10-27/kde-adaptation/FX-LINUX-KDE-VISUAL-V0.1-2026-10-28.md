@@ -240,3 +240,12 @@ OWNER showed the third original mockup again (original cosmic FX OS wallpaper, u
 **Design status:** OWNER selected visual target; not proof of a working Plasma layout or approval of system-level changes. Next action: ensure an actual fresh local backup exists, then create one *empty left panel* in native KDE edit mode, without changing existing upper panel or working FenixSystem. Follow with screenshot for geometry review; add applets and custom menu incrementally. Previous duplicate-panel failure is a prohibited repeat pattern.
 
 **Status precedence:** this note supersedes only the earlier reference 2 preference, not the rollback safeguards, Signal pause, KDE user-level scope, or no-GRUB/EFI/PowerDevil modifications.
+
+
+## 2026-10-29 — OWNER final correction: existing FenixSystem V3 is immutable in visual redesign
+
+**Wiążąca decyzja OWNER (korekta nadrzędna wobec poprzedniej sekcji):** „panel FenixSystem ma być taki jak jest, nie robimy go kompaktowego”. **Zachować bieżący, rozbudowany FenixSystem V3 dokładnie w istniejącej formie** — bez zmniejszania do karty, bez zamiany na trzy wskaźniki kołowe, bez zmiany wymiarów, położenia, układu metryk, wyglądu, konfiguracji Conky, autostartu ani skryptów monitorujących.
+
+Zdjęcie nr 3 pozostaje **głównym wzorem jedynie dla paneli, docka, menu FX OS, tapety/kolorystyki i subtelnych podświetleń**. Przedstawiony na nim **kompaktowy panel monitoringu jest wyraźnie WYŁĄCZONY z zakresu** — nie wolno odtwarzać go ani traktować jako planowanego zamiennika. FenixSystem V3 ma zachować dotychczasowe miejsce u góry po prawej; nowe elementy KDE należy rozmieścić tak, aby go nie zasłaniały.
+
+Zakres implementacji: nowy lewy dock, uporządkowany górny panel, docelowe menu FX OS i estetyka/efekty w natywnym KDE. Każda zmiana odwracalna, snapshot konfiguracji Plasma przed edycją. Żadna lokalna zmiana nie została wykonana przez sam ten zapis na GitHubie.
