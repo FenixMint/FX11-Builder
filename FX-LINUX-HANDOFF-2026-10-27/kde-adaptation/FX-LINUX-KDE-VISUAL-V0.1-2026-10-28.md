@@ -563,3 +563,14 @@ Verified in official Fedora Packages: `plasma-oxygen-6.7.5-1.fc44` is available 
 5. Visual comparison of vividness, button depth, glossy highlights on both top panel/dock and full existing FenixSystem visibility. If unsatisfactory, restore only Plasma Style `default` via `plasma-apply-desktoptheme default` or GUI, leaving Oxygen installed. Never restore the old appletsrc over working pins merely to roll back a style-only trial.
 
 **Scope and status:** authorization for install and style-only trial granted, no on-machine package install or theme switch confirmed yet, no additional UI change claimed. The main FX OS Gloss contract remains inspired by XP/Win7 Aero and Mandriva 2008 Ia Ora / KDE Plastik, Keramik and Oxygen, not a requirement to use Oxygen permanently.
+
+
+## 2026-10-29 — OWNER visually approves Oxygen on both panels
+
+OWNER supplied screenshot following the approved Oxygen-only Plasma Style test and explicitly wrote **`odrazu lepiej`** ('immediately better'). Treat this as an **OWNER subjective visual PASS** for Oxygen on both the top panel and the left vertical dock. Observations from the screenshot: dock task buttons now sit on dark almost-black background without the prominent stock gray square tiles, edges of both panels have fine outlined/shiny border; colored app icons appear clearer and contrast better against FX OS dark wallpaper. Aesthetic direction consistent with gloss/dimension requirement.
+
+**Continuity verified visually:** left task-manager dock still exists with its colorful application icons; horizontal top panel still exists with icons, systray and clock; unchanged original detailed **FenixSystem V3** visible on right with its CPU, RAM, SSD, thermal, battery, network and uptime sections. Screenshot does not establish launcher pin persistence or that every icon reached the desired target order. Do not modify those in this checkpoint.
+
+**Status:** Oxygen **applied visually on user's system** (inferred from screenshot immediately after switch, as corroborated by user), user **likes result**. Exact RPM installation state beyond prior requested installation not independently returned by terminal, but Oxygen appearing and styling panels strongly supports that the Plasma Oxygen theme is installed. OWNER earlier approved keeping it installed as a choice; **keep Oxygen active for now**, do not switch back to `default` or remove package. The visual brief remains FX OS Gloss inspired by Aero XP/7, Mandriva 2008 Ia Ora, Plastik/Keramik/Oxygen. Next scope: safe, user-local refinements, no edits to `/usr/share/...`, preserve ability to switch back and preserve the original FX wallpaper and full FenixSystem. Important note: changing Plasma Style improves contrast/background, not proven to alter source bitmap saturation.
+
+No user-device action performed by this documentation update. Future actions require owner-driven implementation steps.
