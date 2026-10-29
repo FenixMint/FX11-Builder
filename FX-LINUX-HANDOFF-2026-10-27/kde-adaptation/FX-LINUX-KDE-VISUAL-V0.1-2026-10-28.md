@@ -444,3 +444,14 @@ The attached screenshot is a 1680x1-pixel strip; it does **not** contain a legib
 Binding target remains, as an editable initial order: Firefox, Thunderbird, LibreWolf, Signal, Dolphin, Konsole, RustDesk, System Settings, Discover, KWrite; unpinned running applications follow without duplicates. Do not again overwrite `General/launchers` in bulk because this was proven to break icon rendering. Best next action is an optional **read-only** `widget.readConfig('launchers', '')` for left widget 82, plus a correctly-sized screenshot (or OWNER confirmation that all 10 appear) and later a persistence test. Keep the layout as OWNER arranged; do not force an order or touch FenixSystem V3.
 
 Status: manual arrangement **OWNER REPORTED**; visual verification not possible from current narrow attachment. No device changes made by the GitHub record.
+
+
+## 2026-10-29 — full-screen manual dock status: first four ordered, remainder pending
+
+OWNER supplied a readable full desktop screenshot after stating that icon order was adjusted manually. Actual observed dock (top to bottom): 1 Firefox, 2 Thunderbird, 3 LibreWolf, 4 Signal, 5 Konsole/terminal, 6 unidentified white-blue icon, 7 Discover, 8 KDE System Settings, 9 Dolphin. There is **no clearly visible KWrite launcher**; exact identity of the white-blue icon cannot be asserted from screenshot alone, and neither running state nor permanence of pins can be proven from a still image. Do not declare all 10 ordered or a persistent pin test PASS yet.
+
+The **first four icons are visually aligned with OWNER's target**, however Dolphin should move to position 5, Konsole to 6, RustDesk 7, System Settings 8, Discover 9, KWrite 10. Before changing other icons, perform **one native drag only**: move Dolphin from the bottom of the visible dock directly below Signal so it becomes the fifth item, preserving first four. Then ask for screenshot/confirmation of result. Do not repeat bulk rewriting the task manager launchers list or restart Plasma. Keep manually editable sorting and other dynamic running apps.
+
+Full top panel remains populated, systray and clock visible. Original full-sized detailed FenixSystem V3 remains on right. The saved screenshot is in the conversation, **not uploaded to the public repo**.
+
+Current status: manual dock arrangement **PARTIAL VISUAL PASS (positions 1-4)**; remaining order and pin permanence **PENDING**. No local device changes from this GitHub documentation write.
