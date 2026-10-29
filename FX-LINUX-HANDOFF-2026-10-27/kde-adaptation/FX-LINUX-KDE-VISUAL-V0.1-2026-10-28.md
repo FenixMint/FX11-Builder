@@ -847,3 +847,12 @@ Previously verified local API readback: `PANEL 85`, `lengthMode='fit'`, `minimum
 **Acceptance checkpoint:** left dock geometry compact auto-fit visual PASS; normal maximized-window exclusion OWNER PASS; favorites-only Quicklaunch functional design established (dynamic resizing after adding/removing selected launcher remains an optional future test, not separately reported). **Do not adjust panel geometry further or reintroduce old `icontasks` widget 82**. Keep Oxygen, original FX wallpaper, full FenixSystem V3, and upper taskbar with its dynamic running icons. Follow-up possible only on OWNER's request (new custom FX menu / independent upper-bar shortcuts/Signal count overlay), not needed to declare dock geometrically complete.
 
 Rollback snapshot from before auto-fit exists privately at `~/FX-Linux-Odzysk/fx-dock-autofit-20261029-185024-Amsh`. No local system changes made by this documentation update.
+
+
+## 2026-10-29 — OWNER reopens live dock choice; FX OS menu becomes immediate priority
+
+OWNER explicitly revises previous favorite-only Quicklaunch *as final design*: ultimate left dock should be **live (show running applications)**, not merely fixed shortcuts. **Cairo-Dock** is one *possible candidate*, **NOT a selection or authorization to install**. Evaluate its Fedora 44 KDE 6.7.5 Wayland compatibility and alternatives later. Keep proven current left panel **85 Quicklaunch**, Oxygen, working window exclusion and all app pins intact as a functional interim solution; **do not start a dock migration now**.
+
+**Immediate OWNER priority:** build the distinctive **FX OS menu**. Existing upper panel 55 and existing `org.kde.plasma.kickoff` widget **56** are safe baseline; do not delete, replace or alter the panel until a separately verified FX OS implementation is ready. Round glowing FX logo must be at extreme TOP-LEFT button, not in dock. Big popup under it, search, favorites and categories in two columns, Places/Settings/Recent, footer Power/Logout, FX OS Gloss/Oxygen style, preserving the detailed FenixSystem V3. Keep distinct future commands `Dodaj do panelu` (TOP) vs `Dodaj do docka` (LEFT, target pending dock choice). Icon asset and custom menu are not yet installed. See new design document `FX-OS-MENU-V0.1-2026-10-29.md`. Next safe step: screenshot actual Kickoff **opened** to inspect UI before modifying it.
+
+**Status:** USER DECISION COMMITTED; menu work design stage STARTED; no local machine changes from this repository-only write.
