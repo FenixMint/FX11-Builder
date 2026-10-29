@@ -411,3 +411,16 @@ Next OWNER-run recovery: validate both backup files and `plasma-plasmashell.serv
 After successful restore, investigate why 10 pinned entries were not rendered correctly. A likely issue could be KDE internal task-manager config formats or launcher resolution/update semantics, but **root cause has not been established**. Safer path: add/pin one application at a time via native icon task manager, confirm visual and deduplication before proceeding. Preserve live top panel, full FenixSystem V3 and Signal notification settings.
 
 **Status: regression documented, safe rollback planned, not yet OWNER-confirmed.**
+
+
+## 2026-10-29 — pre-10-pin backup restore PASS after bad pinned-list change
+
+OWNER ran rollback and supplied full terminal output plus post-rollback screenshot. Restore source was the correctly selected **immediately preceding layout backup** at `~/FX-Linux-Odzysk/kde-dock-pins-20261029-160408-TpaZ`. Before restoring, OWNER preserved bad layout in private `~/FX-Linux-Odzysk/kde-dock-broken-20261029-160659-MtSq`. Verified both `plasma-org.kde.plasma.desktop-appletsrc` and `plasmashellrc` were copied from pre-change backup while only `plasma-plasmashell.service` was stopped, started, and checked active. Terminal printed **PRZYWRACANIE ZAKOŃCZONE**. Screenshot confirms normal-looking left dock with original application icons, the top panel intact, full detailed FenixSystem V3 on right, and original FX OS wallpaper.
+
+**ROLLBACK PASS by terminal + screenshot; the last 10-launcher script FAILED UI acceptance and remains prohibited to rerun.** The native left dock and `fit` geometry survived. No on-device GRUB/EFI or login settings changes were performed. Do not imply exact original icon count/order tested after rollback; visuals support recovery of prior usable state.
+
+**Next safe incremental approach:** do not replace the entire `General/launchers` string via KDE Plasma scripting. Use the **existing left dock** Icons-only Task Manager's native menu: launch first missing app (e.g., Thunderbird) using original application launcher, locate its icon **in left dock**, right-click **that left-dock icon** and choose **Przypnij do menedżera zadań**; close it to confirm pin persists and icon renders correctly. Add remaining required apps one at a time, verify immediately, then adjust order using drag & drop (manual sorting). Leave upper panel unmodified until the dock's pinned list works, and keep FenixSystem V3 untouched. If missing icons or duplicates appear, stop and inspect; no bulk state writes or reinstall.
+
+**OWNER-requested target sequence (remains unchanged):** Firefox, Thunderbird, LibreWolf, Signal, Dolphin, Konsole, RustDesk, Ustawienia systemowe, Discover, KWrite; below: unpinned currently running apps, no duplicates. Future FX menu dual actions Add to Panel (top) / Add to Dock (left) still separate, not yet implemented.
+
+Status now: usable left dock restored, desired 10-pin list NOT yet applied or tested. Previous icon/status integrations are not proven broken by the rollback.
