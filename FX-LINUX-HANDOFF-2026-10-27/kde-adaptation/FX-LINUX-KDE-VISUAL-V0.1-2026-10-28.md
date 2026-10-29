@@ -477,3 +477,16 @@ Source check: KDE upstream `plasma-desktop/applets/taskmanager/qml/Task.qml` ren
 Safe next observation: compare the LEFT dock's same LibreWolf icon at rest and while pointer is hovering over it, with the mouse cursor away from other elements; report whether icon itself brightens or only dark gray task tile/highlight changes. If only the tile changes, pursue a reversible **dock-only style / Plasma look** experiment rather than editing individual application icons, app shortcuts, FenixSystem scripts, top panel pinned task list, KDE system QML, or Signal. Do not claim a 'saturation slider' exists in stock Icons-only Task Manager. Avoid another bulk launcher-list edit after verified regression.
 
 Status: visual polish issue unresolved, all ongoing changes on installed desktop remain OWNER-driven. No new on-device modification from this note.
+
+
+## 2026-10-29 — OWNER confirms hover slightly brightens but icons remain washed out
+
+OWNER explicitly reports: 'lekko rozjasnia po najechaniu ale wciaz takie przygaszenie jest. brakuje pełnokrwistego koloru'. Therefore hovering changes the icon appearance only a little, but the **actual visual defect is persistent perceived lack of vibrancy when idle**; reproducing the hovered state alone may not completely meet OWNER expectations.
+
+Verified technical evidence from upstream KDE: Plasma's Icons-only Task Manager QML uses `Kirigami.Icon` with `active: task.highlighted`, `enabled: true` and `source: task.model.decoration` in `plasma-desktop/applets/taskmanager/qml/Task.qml` (checked against current main, NOT proven byte-for-byte identical to Fedora's Plasma 6.7.5). Kirigami API confirms `active` uses QIcon Active rendering/effects for hover: https://api.kde.org/qml-org-kde-kirigami-primitives-icon.html . Plasma task manager `ConfigAppearance.qml` does NOT expose a saturation slider: https://github.com/KDE/plasma-desktop/blob/master/applets/taskmanager/qml/ConfigAppearance.qml .
+
+**Scope-safe plan:** do not rewrite pinned launchers or remove the current working left panel (ID 81 / `icontasks` 82). Prefer a future user-local, separately testable FX-themed rendering layer / native compatible variant that boosts default-state icon vibrancy, uses dark task frames and soft blue active accents while retaining task management, drag-to-reorder, notifications and deduplication. Do not change global icon theme, system KDE QML files or the complete detailed FenixSystem V3 merely to improve dock colors. Avoid claiming that customizing tasks.svg alone increases raw bitmap icon saturation; task theme background can improve perceived contrast but rendering effects may require a widget change.
+
+Immediate read-only next step: identify active icon theme (`kreadconfig6 --file kdeglobals --group Icons --key Theme`), Plasma theme (`kreadconfig6 --file plasmarc --group Theme --key name`), and installed Plasma/Frameworks versions (`plasmashell --version`, `rpm -q plasma-desktop plasma-workspace kf6-kirigami`), without any system changes. The OWNER has not yet approved an applet replacement, and no fix for icon saturation has been applied or tested.
+
+**Status:** hover response CONFIRMED, full-color requirement UNMET, further implementation gated by safe compatibility audit and OWNER's visual acceptance.
