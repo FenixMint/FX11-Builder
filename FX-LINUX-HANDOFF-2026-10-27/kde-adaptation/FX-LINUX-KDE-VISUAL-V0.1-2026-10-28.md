@@ -367,3 +367,14 @@ Both actions should retain user configurability (remove, rearrange, persistence 
 **Status:** functional design contract explicitly decided by OWNER. The two-command context menu is **not yet implemented or tested**. Standard Plasma `Dodaj do panelu` might choose panel depending on its normal menu and current topology; custom FX OS menu must implement unambiguous routing instead of claiming current stock menu already does it. The first goal is preserving working existing top panel, left dock ID 81, current FenixSystem V3 and Signal notifications while continuing staged desktop changes.
 
 Earlier paragraph stating `Dodaj do panelu` should always pin to left dock is historical and **superseded by this note**. Do not rewrite historical screenshots or undo previous records.
+
+
+## 2026-10-29 — start dock pin application: adaptive length and real desktop IDs
+
+OWNER says `to jedziemy` after approving the two independent future menu actions (Add to Top Panel; Add to Left Dock). Begin the native KDE dock implementation, **not the custom FX menu widget yet**.
+
+Execution sequence adapted to the actual setup: panel ID 81 is a 58px left panel, currently 450px long with one Icons-only Task Manager; 10 fixed-height pinned icons plus extra active tasks are too many for 450px. First user-run controlled geometry change: make `lengthMode='fit'`, `minimumLength=240`, `maximumLength=850`, alignment center, leave width 58; before writing snapshot `plasma-org.kde.plasma.desktop-appletsrc` and `plasmashellrc` to timestamped `~/FX-Linux-Odzysk` directory. Guard unique left panel ID 81 and unique Icons-only Task Manager widget; inspect existing launchers and manually-sorted state. List matching actual `.desktop` basenames from XDG application directories for Firefox, Thunderbird, LibreWolf, Signal, Dolphin, Konsole, RustDesk, System Settings, Discover, and KWrite. Do not guess desktop IDs because AppImages/Flatpaks may have distinctive names.
+
+After OWNER runtime output, safely rewrite **only the left icontasks widget** initial pinned launcher list in exact confirmed 10-app order, preserving drag-to-reorder and dynamic unpinned running applications below. This is a one-time initial preference, not a daemon/script continuously enforcing order. Verify GUI drag + unpin/re-pin behavior and Signal icon identity; do not rewrite the top bar. KDE docs for Plasma Desktop Scripting: https://develop.kde.org/docs/plasma/scripting/api/ and config reference: https://develop.kde.org/docs/plasma/scripting/keys/ ; source for KDE TaskManager pinned task integration: https://github.com/KDE/plasma-workspace/blob/master/libtaskmanager/tasksmodel.h .
+
+**No local changes from this note**. Signal notifications working; FenixSystem V3 strictly unchanged; bespoke menu 'Dodaj do panelu' top vs 'Dodaj do docka' left remains an unimplemented requirement.
