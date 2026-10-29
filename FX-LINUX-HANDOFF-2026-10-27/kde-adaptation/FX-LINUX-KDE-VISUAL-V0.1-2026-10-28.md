@@ -589,3 +589,29 @@ OWNER explicitly requests **`teraz porzadek z górnym panelem`** after visually 
 Official KDE refs: https://develop.kde.org/docs/plasma/scripting/api/ ; https://docs.kde.org/stable_kf6/en/plasma-desktop/plasma-desktop/panel.html ; https://docs.kde.org/stable_kf6/en/kwin/kcontrol/desktop/index.html .
 
 **Status:** new work phase agreed, no on-machine changes made as of this documentation commit. GitHub branch HEAD inspected via API: 3ff6c7b7c9cee16a8beed4f28705ff4617d2a55c. User-local working tree unavailable to remote assistant.
+
+
+## 2026-10-29 — read-only inventory confirms exact upper panel task manager widget 58
+
+**OWNER runtime read-only script and verified user-local backup.** Backup directory: `~/FX-Linux-Odzysk/kde-top-before-20261029-173646-ILI5` (only store path relative to home; user reported local copy of `plasma-org.kde.plasma.desktop-appletsrc`, `plasmashellrc`, `plasmarc`). The `gdbus` Plasma script yielded:
+
+```text
+PANEL 55 | location=top
+  WIDGET 56 | org.kde.plasma.kickoff
+  WIDGET 57 | org.kde.plasma.pager
+  WIDGET 58 | org.kde.plasma.icontasks
+  WIDGET 59 | org.kde.plasma.marginsseparator
+  WIDGET 60 | org.kde.plasma.systemtray
+  WIDGET 75 | org.kde.plasma.digitalclock
+  WIDGET 76 | org.kde.plasma.showdesktop
+PANEL 81 | location=left
+  WIDGET 82 | org.kde.plasma.icontasks
+```
+
+**Updated conclusion / important correction:** The native **Pager ALREADY EXISTS** as widget 57 on upper panel 55; do not add another one. Extra upper left app icons are rendered by top `icontasks` widget **58**. The separate left dock `icontasks` widget **82** lives in panel **81** and must be left intact. The kickoff widget 56 is stock app menu (not the future bespoke FX OS menu).
+
+**NEXT authorized, narrow operation:** remove ONLY `org.kde.plasma.icontasks` widget ID `58` from verified TOP panel ID `55`, never delete panel 55 or panel 81 or widget 82; preserve kickoff 56, pager 57, separator 59, system tray 60, clock 75, Show Desktop 76. The official Plasma scripting API documents `Widget.remove()` (https://develop.kde.org/docs/plasma/scripting/api/). Precondition: exact backup of appletsrc still exists and read-only guard confirms panel/widget identity/type and the left dock target, then one user-run guarded call `w.remove()`. Stop if topology/IDs mismatch. Afterward verify a new read-only enumeration (top has 56/57/59/60/75/76; left remains 81/82) and screenshot, **do not assume removal succeeded until runtime output**.
+
+Later stage: configure already-present Pager to display desktops 1-4; inspect virtual-desktop count before setting to 4. Keep FX OS Gloss Oxygen style and full detailed FenixSystem V3. Custom round FX menu, direct top shortcut action vs dock pin action remain future functionality.
+
+**Status:** inventory PASS, exact target identified, **removal not yet performed or verified**.
