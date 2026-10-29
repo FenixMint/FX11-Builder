@@ -779,3 +779,16 @@ Original selected-only launcher **Quicklaunch desktop widget 84** remains in des
 **Acceptance test:** rerun read-only inventory; expect `PANEL 85 | location=left | hiding=none` and `WIDGET 84 | org.kde.plasma.quicklaunch` under it, and NO desktop Quicklaunch 84. A screenshot should show one left dock (not two). Maximize a normal window: it should stop before the left panel; native fullscreen may still cover panel. Icons may resize from prior oversized desktop widget now that panel thickness is 64 px; adjust only after first result.
 
 **Status:** left panel geometry **CONFIRMED**, migration/strut test **PENDING**. This step records evidence, not an on-device change.
+
+
+## 2026-10-29 — OWNER reports Quicklaunch 84 transfer command did not pass; output missing
+
+OWNER message: `no nie przeszedł` followed by the **input shell code only** of prior `panelById(85).addWidget(desktop54.widgetById(84))` migration attempt. The terminal result/error is **NOT** included. We cannot determine whether guard printed STOP, a DBus exception occurred, or Plasma transfer failed without runtime output. Do not claim transfer happened, do not blindly rerun mutation.
+
+Source reverified against `plasma-workspace` **v6.7.5** `shell/scripting/containment.cpp` lines 165-216: `Containment::addWidget(const QJSValue &v,...)` accepts QObject-wrapped Widget and calls `d->containment->addApplet(widget->applet())` for moving existing applet; method is supported but execution on OWNER machine remains **UNCONFIRMED / OWNER reports failure**. https://github.com/KDE/plasma-workspace/blob/v6.7.5/shell/scripting/containment.cpp#L165-L216 . Existing design requires preserving selected-only launcher list, no side duplication, top panel unchanged and maximized windows leaving left reserve.
+
+**Next safe step:** short read-only Plasma inventory to enumerate all panels (id, location, hiding, widgets ids/types) and desktops (Quicklaunch id and parent) without configuration edits. Request actual terminal response/error too if inventory cannot complete. Last verified values: top panel 55, empty left panel 85 (64 px, 520 px, `hiding='none'`), desktop 54 with Quicklaunch 84 (before failed attempted migration). Do not conflate last verified state with live proof.
+
+**Fallback if API migration fails:** read-only export of Quicklaunch current `[General] launcherUrls`, `maxSectionCount`, `showLauncherNames`, `enablePopup`, `popupUrls` from widget 84 (no write); then add a new Quicklaunch widget specifically to genuine left panel 85, configure its selected launcher URLs **only after verified mapping and OWNER approval**, test correct selected-only list and workspace reserve, and remove original desktop widget only when replacement is validated. GUI drag desktop applet into genuine panel is another non-destructive option. No appletsrc bulk rewrite, no full Plasma restart without reason. Oxygen, Signal and FenixSystem V3 are protected.
+
+**Status:** API transfer attempt OWNER-reported FAIL; exact error unknown; no on-device changes verified from that attempt. Read-only diagnostic pending.
