@@ -194,3 +194,16 @@ Remaining acceptance criteria: a badge should reflect real unread message count 
 Source context: https://www.electronjs.org/docs/latest/api/app (setBadgeCount Linux LauncherEntry desktop ID) and https://api.kde.org/kstatusnotifieritem.html (NeedsAttention status may indicate a received IM).
 
 Status: system notification popups **PASS** by OWNER report; reactive transient icon overlay **OBSERVED**; persistent unread badge **NOT VERIFIED**.
+
+
+## 2026-10-29 — OWNER resumes FX Linux Plasma redesign
+
+OWNER explicitly resumed redesign of FX Linux KDE desktop, panels and dock on 2026-10-29, requesting the previously documented visual direction, replacing the pause recorded in `../CHECKPOINT-2026-10-28-WYGLAD-SIGNAL.md` **only for visual/layout work**. Signal real persistent unread badge remains paused, whereas working menu icon, notifications and synthetic icon badge must be preserved.
+
+Verified project direction: one slim **existing top panel** for FX launcher, tray/status/clock; one **separate, native Plasma empty left-side dock panel** initially; keep FenixSystem Conky at upper right and current FX OS wallpaper. Suggested exploratory geometry: top ~40 px, left dock panel ~58 px thick, centered vertically, fixed/custom modest length initially; exact appearance must be OWNER-accepted by screenshot. The prior failure was a duplicated full-width panel with repeated widgets; never use `Default Panel` for the dock, clone the populated top panel, or remove/replace both panels in one action.
+
+Execution plan: (0) OWNER creates new private timestamped snapshot of existing `~/.config/plasma-org.kde.plasma.desktop-appletsrc` under `~/FX-Linux-Odzysk/kde-visual-backup-*` and checks hash; (1) preserve existing working top panel unchanged while adding *only* a blank left panel through native KDE GUI, position left, align center, set ~58 px thickness and custom short length (not full-height); (2) obtain new screenshot / OWNER verification of blank dock skeleton before adding any applets; (3) add exactly one Icons-only Task Manager to the dock with controlled pinned apps, verify each app, then **only afterward** remove the corresponding old top-panel task manager / launchers; (4) refine existing top panel to menu left, spacer, systray and clock right with ~40 px height; (5) revisit typography/FX icon/color/opacity as separate reversible phases.
+
+Only permission to guide/user-apply desktop changes is implied; **no remote device access** and nothing on the OWNER desktop is changed by this GitHub documentation write. No commands for EFI, GRUB, login manager, power, system services, monitor geometry, Night Color or Conky. Do not install third-party docks / layout packages. Do not interpret the proposed measurements as previously OWNER-approved exact values.
+
+Status: **plan resumed; backup/new dock construction not yet run or verified by OWNER**.
