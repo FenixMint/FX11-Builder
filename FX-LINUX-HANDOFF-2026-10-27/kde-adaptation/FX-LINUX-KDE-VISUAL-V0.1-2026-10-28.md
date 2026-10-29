@@ -398,3 +398,16 @@ State: **geometry fit PASS**, static 10-pin order **NOT YET APPLIED**, 8 valid .
 ## Dock FX OS — wszystkie dziesiec identyfikatorow aplikacji potwierdzone
 
 OWNER potwierdzil instalacje Flatpak: LibreWolf jako `io.gitlab.librewolf-community.desktop` oraz RustDesk jako `com.rustdesk.RustDesk.desktop`. Oba skroty istnieja w eksporterze Flatpak. Wraz z osmioma wczesniej sprawdzonymi skrotami daje to komplet 10/10. Nastepny etap to jednorazowa zmiana listy `launchers` w lewym widzecie `org.kde.plasma.icontasks` ID 82, panel ID 81, z osobnym backupem i zachowaniem `sortingStrategy=1` (recznie). Kolejnosc OWNER: Firefox, Thunderbird, LibreWolf, Signal, Dolphin, Konsole, RustDesk, Ustawienia systemowe, Discover, KWrite; pozostale uruchomione aplikacje po nich. Gorny panel i FenixSystem bez zmian. Status: konfiguracja dziesieciu przypiec jeszcze niewykonana przez OWNER.
+
+
+## 2026-10-29 — failed 10-launcher replacement; rollback needed
+
+OWNER ran the previously instructed Plasma scripting update on left panel ID 81 / Icons-only Task Manager widget ID 82: set `General/launchers` to all 10 desktop URLs, then `w.reloadConfig()`. Script returned success and echoed all 10 entries, but the actual screenshot **shows a broken dock**: a generic blank-document icon, fewer than 10 icons shown, and incorrect order. This is a verified regression following our instruction; **10-pin application FAIL**. DO NOT present a successful config write as a successful UI result or retry the same script.
+
+Crucial preserved safe point: user reported that the problematic run created `~/FX-Linux-Odzysk/kde-dock-pins-20261029-160408-TpaZ`, containing pre-change copies of `plasma-org.kde.plasma.desktop-appletsrc` and `plasmashellrc`. This is the most appropriate restore source, because it was saved immediately before the faulty pin operation (and after the successful left dock `fit` geometry update). Do not use a much older pre-dock backup: that would lose working geometry and panel work.
+
+Next OWNER-run recovery: validate both backup files and `plasma-plasmashell.service` availability; make a separate timestamped snapshot of the current broken layout; stop **only the user Plasma Shell service**; restore both configuration files from the immediate pre-change backup; restart Plasma Shell. Previous similar restore procedure was confirmed working on this host. No GRUB/EFI/system services changes. **Restore success is not verified until OWNER's terminal and screenshot feedback.**
+
+After successful restore, investigate why 10 pinned entries were not rendered correctly. A likely issue could be KDE internal task-manager config formats or launcher resolution/update semantics, but **root cause has not been established**. Safer path: add/pin one application at a time via native icon task manager, confirm visual and deduplication before proceeding. Preserve live top panel, full FenixSystem V3 and Signal notification settings.
+
+**Status: regression documented, safe rollback planned, not yet OWNER-confirmed.**
