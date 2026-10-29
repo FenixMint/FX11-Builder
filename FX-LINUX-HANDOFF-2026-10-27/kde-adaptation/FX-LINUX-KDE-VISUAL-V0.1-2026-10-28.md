@@ -466,3 +466,14 @@ From full-resolution screenshot: dock icons still contain their correct recogniz
 **Next non-destructive diagnostic:** compare one left-dock app icon while closed versus running and when hovered; distinguish actual desaturation of graphic from dark item background/highlight state. Only then tune left dock **appearance**, not the icon assets, global icon theme, Signal AppImage or entire Plasma shell; prioritize adjustments that can be tested and undone. Keep top panel and FenixSystem V3 unchanged. No on-device changes made from this documentation update.
 
 Status: **visual polish issue OPEN**; no claim that icons are repaired or recolored.
+
+
+## 2026-10-29 — LibreWolf screenshot: no obvious brightness change; task tile appearance remains
+
+OWNER provided a full 1680x1050 screenshot as follow-up to the requested LibreWolf launch test for washed-out left-dock icons. The left dock shows recognizably colored Firefox, Thunderbird, LibreWolf, Signal, Konsole, Dolphin, RustDesk/other apps; each occupies a dark gray task tile. **No clear change in LibreWolf icon brightness is discernible from this single screenshot** compared with earlier screen captures. It cannot prove icon saturation, hover effect, running-state effect, or app activity status alone. Upper panel and original full FenixSystem V3 continue visually intact.
+
+Source check: KDE upstream `plasma-desktop/applets/taskmanager/qml/Task.qml` renders tasks via `Kirigami.Icon { enabled: true; source: task.model.decoration; active: task.highlighted }` and background via `KSvg.FrameSvgItem` with task-state and hover prefixes. Thus launchers and running app task tiles can look different by theme/hover even without replacing icon image data. Source: https://github.com/KDE/plasma-desktop/blob/master/applets/taskmanager/qml/Task.qml . Upstream `master` is a reference, not independently verified to be exact version 6.7.5 on OWNER.
+
+Safe next observation: compare the LEFT dock's same LibreWolf icon at rest and while pointer is hovering over it, with the mouse cursor away from other elements; report whether icon itself brightens or only dark gray task tile/highlight changes. If only the tile changes, pursue a reversible **dock-only style / Plasma look** experiment rather than editing individual application icons, app shortcuts, FenixSystem scripts, top panel pinned task list, KDE system QML, or Signal. Do not claim a 'saturation slider' exists in stock Icons-only Task Manager. Avoid another bulk launcher-list edit after verified regression.
+
+Status: visual polish issue unresolved, all ongoing changes on installed desktop remain OWNER-driven. No new on-device modification from this note.
