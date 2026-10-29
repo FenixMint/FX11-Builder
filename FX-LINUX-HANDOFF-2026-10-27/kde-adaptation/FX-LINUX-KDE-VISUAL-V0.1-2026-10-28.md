@@ -816,3 +816,14 @@ Status: diagnosis script syntax FAIL; recovered workaround prepared, device stat
 **Acceptance after user command:** terminal returns OK plus `fit`, screenshot shows panel vertically centered and shorter beneath last icon; adding a selected application should grow panel, removing should shrink; opening unrelated app should NOT add icon to Quicklaunch; maximize normal window to verify left edge remains reserved. If fit length does not respond, diagnose separately instead of claiming it works. Keep Oxygen, Signal integration and original complete FenixSystem untouched.
 
 **Status:** OWNER manually migrated selected-only app launcher into genuine left panel; dynamic fit **requested, pending user runtime verification**.
+
+
+## 2026-10-29 — left Quicklaunch panel 85 auto-fit successfully applied
+
+**OWNER executed guarded dynamic auto-fit script and returned a successful live API readback.** Private backup: `~/FX-Linux-Odzysk/fx-dock-autofit-20261029-185024-Amsh` (`plasma-org.kde.plasma.desktop-appletsrc`, `plasmashellrc`). Exact output: `('OK PANEL 85TRYB=fitMIN=64MAX=820SZEROKOSC=64',)`.
+
+The guard passed for **exactly two panels**, top 55 at `top` with widget 58 still present, left 85 at `left` with `hiding='none'` and **exactly one `org.kde.plasma.quicklaunch` widget**. The script set only the left panel: `minimumLength=64`, `maximumLength=820`, `lengthMode='fit'`. Its `height` (panel thickness) read back as 64 px. The earlier left panel alignment was `center` and no command changed it. These facts are runtime-backed and fix the prior 440px minimum/520px custom length that caused blank trailing space.
+
+**Status:** `fit` configuration **PASS**; actual visual shrinking/expanding with add/remove launcher is **not independently demonstrated** yet, nor has maximizing a window against the newly populated real panel been explicitly tested. Next step: screenshot for visual fit, then optionally add/remove a temporary Quicklaunch shortcut and maximize a normal app window to ensure it stays behind/away from the always-visible panel. Do not change global theme, top panel 55, Signal icon/notifications, or detailed FenixSystem V3. User should not need to restart Plasma or reset launchers.
+
+**Product contract retained:** top bar has chosen fixed system apps + dynamic running tasks; left panel only explicitly selected favorites with one-column Quicklaunch; Oxygen is approved as current glossy Plasma Style. No direct local-device modifications made in this GitHub documentation commit.
