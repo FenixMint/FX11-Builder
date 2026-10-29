@@ -628,3 +628,14 @@ OWNER shared an updated full 1536x960 desktop screenshot after running the propo
 **Do not touch**: top launcher 56, Pager 57, widget 59, tray 60, clock 75, Show Desktop 76, whole panel 55, left panel 81/widget 82, Signal icon/notifications, FenixSystem, oxygen style; do not repeat deletion or add a new task manager. Later inspect why Pager 57 currently not visibly showing digits; 4 desktops and `1 2 3 4` remain separate next stage. If edit UI cannot locate Add Spacer, stop and request a screenshot of panel Edit Mode rather than guess or write undocumented scripting mutations. Backups remain in `~/FX-Linux-Odzysk/kde-top-before-20261029-173646-ILI5`.
 
 Status: top task duplication **VISUAL PASS**, right-side alignment **REGRESSION OPEN**, simple flexible spacer correction planned but not applied yet.
+
+
+## 2026-10-29 — OWNER requests immediate rollback of top task manager removal
+
+**OWNER explicitly ordered**: `poczekaj. wrócmy do stanu sprzed usuniecia na górny panelu` ('Wait. Return to state before deletion on the top panel'). This **supersedes** the flexible spacer correction plan for now. Stop additional panel edits, do not add spacer yet. OWNER wants the exact previous top task-manager state back, including its icons and the right aligned system tray/clock.
+
+Known safe rollback snapshot from **immediately before deletion**: `~/FX-Linux-Odzysk/kde-top-before-20261029-173646-ILI5` which contains `plasma-org.kde.plasma.desktop-appletsrc`, `plasmashellrc`, `plasmarc`. Restore only appletsrc + plasmashellrc from it; **do not overwrite plasmarc**, as Oxygen Plasma Style should remain active. Snapshot the current post-deletion config into a new timestamped `~/FX-Linux-Odzysk/kde-top-before-rollback-*` directory first.
+
+Suggested OWNER-run guarded shell procedure: check both source files exist/nonempty; save current configs to new directory; `systemctl --user stop plasma-plasmashell.service`; set EXIT trap that restarts shell if failure; copy both backed-up config files into `~/.config/`; `systemctl --user start plasma-plasmashell.service`; clear trap; confirm shell active. The prior dock rollback used the same stop/copy/start pattern and was successful. This should restore upper panel widget 58 and right alignment, as well as restore left dock to the pre-deletion snapshot (which was taken after manual ordering). **No rollback performed by assistant**; wait for OWNER terminal result and full screenshot, validate visually and optionally read-only enumerate panels/wigets afterwards.
+
+Important: OWNER requests revert, NOT a fresh removal/addition; no upper panel 'spacer' changes until OWNER re-authorizes. Preserve original wallpaper, Oxygen, Signal and FenixSystem V3.
