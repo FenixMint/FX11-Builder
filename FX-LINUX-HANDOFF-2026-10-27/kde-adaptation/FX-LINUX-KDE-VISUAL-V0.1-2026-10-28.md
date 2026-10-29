@@ -224,3 +224,19 @@ OWNER supplied three original FX OS desktop design reference images following an
 **Best next implementation step remains safe and incremental:** Make fresh user-only copy of `plasma-org.kde.plasma.desktop-appletsrc`; preserve existing upper panel, wallpaper, FenixSystem and working Signal notifications; add one `Pusty panel` to left edge only, ~58px, centered, no widgets yet; verify screenshot. Later add icons-only task manager and reorganize existing top panel. Never use `Default Panel` or copy a populated panel. Owner has not yet confirmed running these steps in the resumed session.
 
 Status: visual references reviewed, reference 2 recommended as starting architecture; **no additional local Plasma modification is verified**.
+
+
+## 2026-10-29 — OWNER selects reference 3 as principal FX OS visual target
+
+OWNER showed the third original mockup again (original cosmic FX OS wallpaper, upper bar with desktops 1–4, slim glowing FX icon dock to left, large FX OS menu on left and compact telemetry card at upper right) and explicitly stated this is **the best reference**. The previously newly generated (mountain/weather/calendar) mockup was described as decent, but **not preferred**. This explicit OWNER choice **supersedes the previous assistant's recommendation to use reference 2 as principal**. Preserve the 3 original images as conceptual reference; images are in chat only and were not committed to the public repo.
+
+**Selected target components**, visually faithful to supplied reference:
+- Top slim translucent dark panel, workspace switcher `1 2 3 4` left, tray/status + date/time right; no bottom full-width taskbar.
+- Left vertical dock integrated into layout: round glowing FX mark/menu launcher on top, apps down the left with blue highlight and subtle separators, trash icon near bottom; should work as native Plasma panel/Icons-only Task Manager where practical.
+- Large **FX OS** custom-look launcher with cyan edge glow, dark/glass background, rounded edges, top search field, favorites list in left column, app categories/places/actions in right column, logout/restart/shutdown buttons near bottom. **Do not claim exact custom menu is available through native Application Launcher appearance alone**; investigate separate custom Plasma launcher design/implementation after safe panel foundation.
+- Original FX OS wallpaper with blue luminous halo, central FX OS branding.
+- Compact dark-glass FenixSystem card at upper right with circular CPU/RAM/disk values, network activity and uptime. Current detailed Conky FenixSystem is functioning, must be **preserved until a separately tested replacement** is accepted. Numeric values in reference image are illustrative, not current machine measurements.
+
+**Design status:** OWNER selected visual target; not proof of a working Plasma layout or approval of system-level changes. Next action: ensure an actual fresh local backup exists, then create one *empty left panel* in native KDE edit mode, without changing existing upper panel or working FenixSystem. Follow with screenshot for geometry review; add applets and custom menu incrementally. Previous duplicate-panel failure is a prohibited repeat pattern.
+
+**Status precedence:** this note supersedes only the earlier reference 2 preference, not the rollback safeguards, Signal pause, KDE user-level scope, or no-GRUB/EFI/PowerDevil modifications.
