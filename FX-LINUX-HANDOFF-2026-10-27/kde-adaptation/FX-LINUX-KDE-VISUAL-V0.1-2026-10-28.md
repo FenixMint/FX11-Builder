@@ -615,3 +615,16 @@ PANEL 81 | location=left
 Later stage: configure already-present Pager to display desktops 1-4; inspect virtual-desktop count before setting to 4. Keep FX OS Gloss Oxygen style and full detailed FenixSystem V3. Custom round FX menu, direct top shortcut action vs dock pin action remain future functionality.
 
 **Status:** inventory PASS, exact target identified, **removal not yet performed or verified**.
+
+
+## 2026-10-29 — upper task icons removed; tray jumped left because no flexible spacer
+
+OWNER shared an updated full 1536x960 desktop screenshot after running the proposed removal of TOP task manager `org.kde.plasma.icontasks` widget 58 from top panel 55. **Visual confirmation**: the duplicated app task icons disappeared from the top bar. **Layout regression observed**: the system tray (widget 60), clock (75) and Show Desktop button (76), formerly at the far right, have slid immediately beside the top-left Kickoff launcher (56). The bar remains full width, with a wide blank region to the right. Left vertical dock ID 81 / widget 82, original wallpaper, Oxygen look and full detailed FenixSystem V3 all remain visibly intact. The runtime output of the deletion call has not yet been provided; do not claim a read-only post-delete API audit.
+
+**Root cause:** Plasma panel items left-align by default; the previous top task manager took up expanding width. `org.kde.plasma.marginsseparator` widget 59 is not a full expanding spacer. KDE documentation confirms an **elastic/flexible Panel Spacer** is used to separate left/right groups (https://userbase.kde.org/Plasma/Panels and Plasma 6 clarification https://discuss.kde.org/t/solved-plasma-panel-spacer-and-flexible-space-widgets-gone/45581).
+
+**Immediate safe correction:** GUI-only, **do not restore deleted top task manager**. Right-click the horizontal top panel -> Enter Edit Mode / Show Panel Configuration; use the **panel configuration tool's `Add Spacer` / `Dodaj odstęp`** control (in Plasma 6 not necessarily found in the regular Add Widgets search). Drag its blue editable stripe **between the existing Pager 57 and system tray 60** (i.e. after Kickoff / pager group and before margins separator 59/system tray); ensure `Set flexible size` is ON. This should expand to fill the middle, shifting the system tray, clock and Show Desktop to the far right. Leave the right group widget order intact. Exit Edit Mode and verify visually.
+
+**Do not touch**: top launcher 56, Pager 57, widget 59, tray 60, clock 75, Show Desktop 76, whole panel 55, left panel 81/widget 82, Signal icon/notifications, FenixSystem, oxygen style; do not repeat deletion or add a new task manager. Later inspect why Pager 57 currently not visibly showing digits; 4 desktops and `1 2 3 4` remain separate next stage. If edit UI cannot locate Add Spacer, stop and request a screenshot of panel Edit Mode rather than guess or write undocumented scripting mutations. Backups remain in `~/FX-Linux-Odzysk/kde-top-before-20261029-173646-ILI5`.
+
+Status: top task duplication **VISUAL PASS**, right-side alignment **REGRESSION OPEN**, simple flexible spacer correction planned but not applied yet.
