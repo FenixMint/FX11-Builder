@@ -710,3 +710,33 @@ OWNER supplied new full desktop screenshot after Quicklaunch GUI formatting and 
 **Conditional resolution:** if Quicklaunch is inside a left-edge panel and `hiding` is not `none`, set **only that left panel's** visibility to `Zawsze widoczny` via GUI Edit Mode (or narrow guarded `panel.hiding = 'none'` after snapshot). This should reserve space in the compositor for normal/maximized windows; native fullscreen may cover panels as intended. If Quicklaunch appears only under desktops(), the fix is to **move/add the existing widget into a genuine left Plasma panel**, preserving its launcher list, not to change opacity or tray icon settings; validate screenshot, make private configuration backup and avoid duplicate panels. If left panel already has `hiding='none'` and widget resides there, investigate panel strut/workarea/Wayland issue, geometry and maximization separately, without claiming a simple visibility setting cured it. Never edit window placement rules until underlying cause known.
 
 **Safety and status:** side Quicklaunch display one-column PASS. Dock maximized-window exclusion FAIL/OPEN. No on-device change from this note. Keep other panel, Oxygen, Signal, FenixSystem untouched. Await read-only runtime inventory to choose safe correction.
+
+
+## 2026-10-29 — CONFIRMED root cause: Quicklaunch 84 is a desktop widget, not a left panel
+
+OWNER executed the read-only Plasma script enumerating `panels()` and `desktops()` after reporting maximized windows overlap Quicklaunch. **Exact result:**
+
+```text
+PANEL 55 | location=top | hiding=none
+  WIDGET 56 | org.kde.plasma.kickoff
+  WIDGET 57 | org.kde.plasma.pager
+  WIDGET 58 | org.kde.plasma.icontasks
+  WIDGET 59 | org.kde.plasma.marginsseparator
+  WIDGET 60 | org.kde.plasma.systemtray
+  WIDGET 75 | org.kde.plasma.digitalclock
+  WIDGET 76 | org.kde.plasma.showdesktop
+UWAGA: QUICKLAUNCH NA PULPICIE
+  DESKTOP 54 | WIDGET 84
+```
+
+**ROOT CAUSE CONFIRMED:** no left Plasma panel remains (old ID 81 is ABSENT); chosen-application Quicklaunch widget ID **84** belongs to **desktop containment 54**, only visually placed at left edge. Desktop applets do not reserve screen geometry; application/maximized windows may cover it. Top panel 55 remains intact. This is NOT an Oxygen/icon render or auto-hide issue. **Previous hypothesis that merely toggling hiding state on panel 81 would fix was ruled out; that panel does not exist.**
+
+**Safe repair contract:** OWNER needs a **genuine vertical left panel** with `location=left`, `hiding=none` (Plasma GUI option `Zawsze widoczny`) so maximized windows reserve its screen width. Keep original Quicklaunch desktop widget 84 and its carefully curated app URLs untouched during initial panel creation; DO NOT restore the old dock from earlier snapshot, change top taskbar, or edit plugin config manually.
+
+**Proposed staged GUI repair:** (1) immediately snapshot current `~/.config/plasma-org.kde.plasma.desktop-appletsrc`, `plasmashellrc` (and `plasmarc` only if useful) into new timestamped private `~/FX-Linux-Odzysk/` directory. (2) Right-click desktop → `Wejdź w tryb edycji` → `Dodaj panel` → `Pusty panel` (NOT Default panel, which duplicates tray/taskbar); if new panel is temporarily along bottom that's safe; use panel config to move it to **left**, select `Zawsze widoczny`, width roughly **72–80 px**, length `Dopasuj do zawartości`, center. (3) **Only after real panel exists**, in Edit Mode try dragging existing Quicklaunch desktop widget **84** via its applet move handle into the empty left panel, preserving its launcher list; KDE docs historically document moving an applet desktop→panel (https://userbase.kde.org/Plasma/FAQ/4.4/Configuration), but this behavior on Plasma 6.7.5 must be verified visually, so if it won't dock, STOP; do not delete widget 84. Alternative if no cross-containment move: add new Quicklaunch specifically into the left panel from `Dodaj widżety`, duplicate launchers via GUI, verify then remove desktop applet 84.
+
+Official KDE Plasma 6 panel docs https://userbase.kde.org/Plasma/Panele and official Qt6 handbook https://docs.kde.org/trunk_kf6/en/plasma-desktop/plasma-desktop/desktop.html confirm: desktop applets are separate containment, while genuine panel can reserve geometry when set `Always Visible`. The Edit Mode → Add panel → Empty panel path is corroborated for Plasma 6 by https://forums.opensuse.org/t/add-widgets-and-add-panel-missing/176080/12 .
+
+**Verification gate:** rerun inventory and require a **new `PANEL <new ID> | location=left | hiding=none`** with `org.kde.plasma.quicklaunch` included, and no desktop Quicklaunch 84 (if moved rather than copied); visually maximize a normal app to confirm it stops before panel. User may have to adjust its one-column Quicklaunch max columns=1 after move; preserve Oxygen / top panel 55 / original detailed FenixSystem V3 / wallpaper / Signal.
+
+**Status:** diagnosis CONFIRMED; repair NOT YET EXECUTED, no claim of success. Do not delete original launcher widget before successful migration.
